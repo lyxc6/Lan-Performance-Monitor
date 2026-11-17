@@ -333,20 +333,44 @@ namespace LanPerfMon
 
             if (path.Equals("/api/debug", StringComparison.OrdinalIgnoreCase))
             {
+                // Requires the per-process token: the sensitive fields below expose
+                // machine-level paths and identity, and this server has no login.
+                string token = ExtractDebugToken(request);
+                bool authorized = DebugAccess.IsValid(token);
+
                 StringBuilder sb = new StringBuilder(900);
                 sb.Append("{\"ok\":true");
-                sb.Append(",\"logPath\":"); StatsJson.Quote(sb, Log.LogPath);
-                sb.Append(",\"logTest\":"); StatsJson.Quote(sb, Log.TestWrite());
-                sb.Append(",\"newFileWrite\":"); StatsJson.Quote(sb, Diag.NewFileWrite());
-                sb.Append(",\"integrity\":"); StatsJson.Quote(sb, Diag.Integrity());
-                sb.Append(",\"rawShellAdd\":"); StatsJson.Quote(sb, Diag.RawShellAdd());
-                sb.Append(",\"temp\":"); StatsJson.Quote(sb, Environment.GetEnvironmentVariable("TEMP"));
-                sb.Append(",\"cwd\":"); StatsJson.Quote(sb, Environment.CurrentDirectory);
-                sb.Append(",\"userInteractive\":").Append(Environment.UserInteractive ? "true" : "false");
-                sb.Append(",\"session\":").Append(Native.GetSessionId().ToString(CultureInfo.InvariantCulture));
-                sb.Append(",\"elevated\":").Append(Native.IsElevated ? "true" : "false");
-                sb.Append(",\"trayRetries\":").Append(MainForm.TrayRetryDone.ToString(CultureInfo.InvariantCulture));
+                sb.Append(",\"locked\":").Append(authorized ? "false" : "true");
+                sb.Append(",\"version\":\"").Append(AppHost.Version).Append('"');
                 sb.Append(",\"uptime\":").Append(((long)(DateTime.UtcNow - _host.StartedUtc).TotalSeconds).ToString(CultureInfo.InvariantCulture));
+                sb.Append(",\"trayRetries\":").Append(MainForm.TrayRetryDone.ToString(CultureInfo.InvariantCulture));
+                sb.Append(",\"trayRecreated\":").Append(MainForm.TaskbarRecreatedCount.ToString(CultureInfo.InvariantCulture));
+                sb.Append(",\"elevated\":").Append(Native.IsElevated ? "true" : "false");
+                sb.Append(",\"userInteractive\":").Append(Environment.UserInteractive ? "true" : "false");
+
+                if (authorized)
+                {
+                    sb.Append(",\"logPath\":"); StatsJson.Quote(sb, Log.LogPath);
+                    sb.Append(",\"logTest\":"); StatsJson.Quote(sb, Log.TestWrite());
+                    sb.Append(",\"newFileWrite\":"); StatsJson.Quote(sb, Diag.NewFileWrite());
+                    sb.Append(",\"integrity\":"); StatsJson.Quote(sb, Diag.Integrity());
+                    sb.Append(",\"rawShellAdd\":"); StatsJson.Quote(sb, Diag.RawShellAdd());
+                    sb.Append(",\"temp\":"); StatsJson.Quote(sb, Environment.GetEnvironmentVariable("TEMP"));
+                    sb.Append(",\"cwd\":"); StatsJson.Quote(sb, Environment.CurrentDirectory);
+                    sb.Append(",\"session\":").Append(Native.GetSessionId().ToString(CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    // Unauthenticated: paths are reduced to their last component and
+                    // the file/shell probes are not executed at all (they create real
+                    // files and touch the notification area).
+                    sb.Append(",\"logPath\":"); StatsJson.Quote(sb, DebugAccess.RedactPath(Log.LogPath));
+                    sb.Append(",\"temp\":"); StatsJson.Quote(sb, DebugAccess.RedactPath(Environment.GetEnvironmentVariable("TEMP")));
+                    sb.Append(",\"cwd\":"); StatsJson.Quote(sb, DebugAccess.RedactPath(Environment.CurrentDirectory));
+                    sb.Append(",\"hint\":\"需要诊断令牌：在主窗口点“复制诊断令牌”，" +
+                              "然后用 ?token= 或请求头 X-Debug-Token 访问。\"");
+                }
+
                 sb.Append("}");
                 WriteJson(stream, 200, sb.ToString(), head);
                 return;
@@ -377,6 +401,43 @@ namespace LanPerfMon
 
             WriteResponse(stream, 404, "text/plain; charset=utf-8",
                 Encoding.UTF8.GetBytes("Not Found"), head, "no-store");
+        }
+
+        /// <summary>
+        /// Reads the diagnostic token from the request: header first, then query
+        /// string. Works for both curl-style callers and a plain browser URL.
+        /// </summary>
+        private static string ExtractDebugToken(Request request)
+        {
+            string value;
+            if (request.Headers.TryGetValue("X-Debug-Token", out value) && !string.IsNullOrEmpty(value))
+                return value.Trim();
+
+            string query = request.Query;
+            if (string.IsNullOrEmpty(query))
+                return null;
+
+            string[] pairs = query.Split('&');
+            for (int i = 0; i < pairs.Length; i++)
+            {
+                string pair = pairs[i];
+                int eq = pair.IndexOf('=');
+                if (eq <= 0)
+                    continue;
+                string key = pair.Substring(0, eq);
+                if (!key.Equals("token", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                try
+                {
+                    return Uri.UnescapeDataString(pair.Substring(eq + 1).Replace("+", " ")).Trim();
+                }
+                catch
+                {
+                    return pair.Substring(eq + 1).Trim();
+                }
+            }
+
+            return null;
         }
 
         private static Dictionary<string, string> ParseForm(string body)

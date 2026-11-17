@@ -89,6 +89,15 @@ namespace LanPerfMon
         [DllImport("kernel32.dll")]
         public static extern uint GetACP();
 
+        /// <summary>
+        /// Registers a window message and returns its id. Used to obtain the
+        /// "TaskbarCreated" broadcast id, which Explorer sends when the
+        /// notification area is (re)created -- e.g. right after logon, or after
+        /// Explorer restarts. Every NotifyIcon must re-add its icon on that message.
+        /// </summary>
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern int RegisterWindowMessage(string lpString);
+
         public static bool IsElevated
         {
             get

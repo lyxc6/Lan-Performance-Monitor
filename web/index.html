@@ -638,6 +638,47 @@ body {
 .land .gl { font-size: 11px; }
 .land .fpsRow { top: 11px; }
 .land .chartWrap { top: 43px; }
+
+/* Short-card layout. Applied by layoutGauges() when a CPU/GPU card is too short
+   to stack "ring + value + label" vertically (e.g. a landscape viewport forced
+   into the portrait layout on iPhone 4S, split-screen windows, external
+   displays). Reuses the same idea as the phone landscape layout: move the
+   header to a left column so the gauges get the full card height. Chosen over
+   "rotate and scale the canvas", which would waste ~56% of a 480px-wide
+   viewport and shrink the type further. */
+html.short #cpu .cardHead, html.short #gpu .cardHead {
+    top: 50%;
+    left: 4px;
+    right: auto;
+    width: 58px;
+    height: auto;
+    transform: translateY(-50%);
+    -webkit-transform: translateY(-50%);
+}
+html.short #cpu .tag, html.short #gpu .tag {
+    position: static;
+    display: block;
+    margin-bottom: 1px;
+    font-size: 8px;
+}
+html.short #cpu .name, html.short #gpu .name {
+    position: static;
+    display: block;
+    width: 58px;
+    height: auto;
+    max-height: 22px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 7px;
+    line-height: 9px;
+}
+html.short #cpu .gauges, html.short #gpu .gauges {
+    top: 1px;
+    bottom: 1px;
+    left: 64px;
+    right: 1px;
+}
 .land #ramBarWrap { top: 36px; }
 .land #ramDetail { bottom: 5px; }
 @media (min-width: 620px) {
@@ -649,7 +690,11 @@ body {
         padding: 12px 16px 8px 16px;
     }
     #top { top: 12px; left: 16px; right: 0; }
-    #host { right: 92px; width: 190px; font-size: 10px; }
+    /* #host used to sit at right:92px with width:190px while #orientBtn is
+       pinned at right:76px -- they overlapped by 8px and the host name was
+       truncated to "I5-308". Anchoring #host's right edge past the button keeps
+       a real gap at every width instead of hardcoding a near-collision. */
+    #host { right: 108px; width: auto; left: auto; max-width: 220px; font-size: 10px; }
     #clock { font-size: 16px; width: 84px; line-height: 22px; }
     #content { top: 49px; bottom: 31px; }
     .cardHead { top: 8px; left: 16px; right: 13px; height: 22px; }
@@ -705,7 +750,15 @@ body {
                     land = true;
                 }
             }
-            land = land && (w <= 619);
+            // The phone landscape layout is a compact 1-row-per-card arrangement;
+            // apply it only on phone-sized viewports, in either direction. The
+            // previous `w <= 619` check additionally blocked forced landscape on
+            // desktops/tablets, so pressing 横屏 there did nothing at all.
+            // An explicit force must always win, so the size gate only applies
+            // when the mode is derived (auto).
+            if (forced === "auto") {
+                land = land && (w <= 619 || h <= 400);
+            }
             var cls = el.className || "";
             var has = (" " + cls + " ").indexOf(" land ") >= 0;
             if (land && !has) {
@@ -1133,7 +1186,53 @@ body {
         return used.toFixed(1) + " / " + total.toFixed(1) + " GB";
     }
 
+    // Minimum card height that still fits the normal vertical stack: the ring
+    // plus its 15px label underneath. The ring is sized dynamically, so this is a
+    // "can we still show a usable ring with a label under it" threshold rather
+    // than a design constant:
+    //   usable ring >= 34px  AND  ring + 15px label <= card height
+    // 92px-tall cards (the normal 320x480 portrait) stay in the regular layout;
+    // 59px-tall cards (480x320 forced to portrait) switch to the left column.
+    var SHORT_CARD_LIMIT = 78;
+
+    function applyShortCardMode() {
+        var el = document.documentElement;
+        var cls = el.className || "";
+        var has = (" " + cls + " ").indexOf(" short ") >= 0;
+
+        var short = false;
+        var cards = [$("cpu"), $("gpu")];
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            if (!card) continue;
+            if (card.clientHeight > 0 && card.clientHeight < SHORT_CARD_LIMIT)
+                short = true;
+        }
+
+        if (short === has)
+            return false; // nothing to change, avoid layout thrash every second
+
+        if (short)
+            el.className = (cls + " short").replace(/^\s+/, "");
+        else
+            el.className = cls.replace(/\s*\bshort\b/, "");
+        return true;
+    }
+
     function layoutGauges() {
+        // Short-card detection runs before the per-card pass: if a CPU/GPU card
+        // cannot fit "ring + value + label" vertically, switch to the left-column
+        // header layout so the gauges get the full card height. Without this a
+        // 59px-tall card (480x320 viewport forced to portrait) can only show tiny
+        // rings with labels spilling over the card border.
+        if (applyShortCardMode()) {
+            // The class just changed the .gauges box, so the measurements below
+            // would be stale. One extra pass after the browser applies the new
+            // styles gives the gauges their real size.
+            setTimeout(layoutGauges, 30);
+            return;
+        }
+
         var cards = [$("cpu"), $("gpu")];
         for (var c = 0; c < cards.length; c++) {
             var card = cards[c];
@@ -1141,16 +1240,44 @@ body {
             var gauges = card.getElementsByClassName("gauges")[0];
             var areaH = gauges ? gauges.clientHeight : (card.clientHeight - 22);
             var cellW = (gauges ? gauges.clientWidth : card.clientWidth) / 5;
-            // Vertical budget: label sits at 78% + ~15px inside the ring group,
-            // keep >=3px clear of the card header.
-            var byHeight = (areaH - 18) / 0.78;
+            // Vertical budget: the label sits at 78% of the ring box, then extends
+            // another ~15px below it. Reserve that label band plus a small safety
+            // margin, otherwise the label's bottom edge is pushed past the card
+            // border on short cards (measured 3px overflow at 480x320 portrait).
+            var labelBand = 18;
+            var byHeight = (areaH - labelBand) / 0.78;
             // Horizontal budget: visible circle is 90% of the box; keep >=2px
             // gap between neighbouring circles.
             var byWidth = (cellW - 2) / 0.9;
-            // Floor follows the available height so short viewports never
-            // overflow the card (labels sit at 78% + 15px inside the group).
-            var ringFloor = clamp(Math.floor(areaH / 0.78) - 4, 26, 40);
-            var ring = clamp(Math.floor(Math.min(byHeight, byWidth)), ringFloor, 150);
+            var ring = clamp(Math.floor(Math.min(byHeight, byWidth)), 26, 150);
+
+            // The value text lives inside the ring and is absolutely positioned at
+            // its vertical center, so it needs vertical room too: a ~17px line box
+            // must fit inside a ring. Below that the digits spill over the arc, which
+            // looks worse than any label overflow. So ring size also respects the
+            // space the value needs, and the label band yields instead.
+            var valueBox = 17;
+            var minRingForValue = valueBox + 4;
+            if (ring < minRingForValue && areaH >= minRingForValue) {
+                ring = Math.min(minRingForValue, Math.floor(Math.min(byHeight, byWidth)));
+            }
+
+            // Self-check: ring + label band must fit the allocated gauge area.
+            // When the card is too short for both, the label shrinks (compact mode
+            // below) rather than spilling over the card border.
+            var compactLabel = areaH < 56;
+            var labelHeight = compactLabel ? 10 : 15;
+            var labelSize = compactLabel ? 8 : 12;
+            var needed = ring + labelHeight;
+            if (needed > areaH) {
+                var fitted = Math.floor(areaH - labelHeight);
+                if (fitted >= minRingForValue) {
+                    ring = fitted;
+                }
+            }
+            // Never let the ring exceed the cell width either.
+            ring = Math.min(ring, Math.floor(byWidth));
+
             var rings = card.getElementsByClassName("ring");
             var values = card.getElementsByClassName("gv");
             var inners = card.getElementsByClassName("gaugeInner");
@@ -1163,16 +1290,23 @@ body {
                 rings[i].style.marginRight = "0";
             }
             for (var k = 0; k < inners.length; k++) {
-                var labelBottom = ring * 0.78 + 15;
+                var labelBottom = ring * 0.78 + labelHeight;
                 var overflow = labelBottom > ring ? Math.ceil(labelBottom - ring) : 0;
                 inners[k].style.marginTop = (-(ring + overflow) / 2) + "px";
             }
-            var fontSize = Math.max(13, Math.round(ring * 0.29));
+            var fontSize = Math.max(11, Math.round(ring * 0.29));
             for (var j = 0; j < values.length; j++) {
                 values[j].style.fontSize = fontSize + "px";
                 values[j].style.lineHeight = (fontSize + 8) + "px";
                 values[j].style.height = (fontSize + 8) + "px";
                 values[j].style.marginTop = (-(fontSize + 8) / 2) + "px";
+            }
+            // Apply the measured label metrics (the .gl rule is static 15px/12px).
+            var labels = card.getElementsByClassName("gl");
+            for (var m = 0; m < labels.length; m++) {
+                labels[m].style.height = labelHeight + "px";
+                labels[m].style.lineHeight = labelHeight + "px";
+                labels[m].style.fontSize = labelSize + "px";
             }
             var vramSub = $("gpuVramSub");
             var vramValue = $("gpuVram");

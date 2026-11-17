@@ -21,18 +21,21 @@ namespace LanPerfMon
         private Button _btnOpen;
         private Button _btnExit;
         private Button _btnLayout;
+        private Button _btnDiagToken;
         private CheckBox _chkAutoStart;
         private Label _lblStatus;
         private Label _lblFps;
         private Label _lblVolume;
         private Label _lblFirewall;
         private Label _lblHint;
+        private Label _lblOpen;
 
         private bool _allowExit;
         private bool _loading;
         private bool _balloonShown;
         private ToolStripMenuItem _trayAutoStart;
         private DateTime _copyResetAt = DateTime.MinValue;
+        private DateTime _diagResetAt = DateTime.MinValue;
 
         public MainForm(AppOptions options)
         {
@@ -195,34 +198,48 @@ namespace LanPerfMon
             _lblHint.Size = new Size(504, 38);
             Controls.Add(_lblHint);
 
-            _btnOpen = MakeButton("打开监控页面", 18);
-            _btnOpen.Location = new Point(18, 330);
-            _btnOpen.Size = new Size(150, 34);
+            _lblOpen = MakeStatusLabel(320);
+
+            // Diagnostic token: the only way to read the sensitive /api/debug
+            // fields. Kept on the local window (and the tray menu) so a remote
+            // LAN peer can never bootstrap into it.
+            _btnDiagToken = MakeButton("复制诊断令牌", 18);
+            _btnDiagToken.Location = new Point(18, 340);
+            _btnDiagToken.Size = new Size(122, 30);
+            _btnDiagToken.Font = new Font("Microsoft YaHei UI", 8.5F, FontStyle.Regular);
+            _btnDiagToken.Click += delegate { CopyDebugToken(); };
+            Controls.Add(_btnDiagToken);
+
+            _btnOpen = MakeButton("打开监控页面", 147);
+            _btnOpen.Location = new Point(147, 340);
+            _btnOpen.Size = new Size(112, 30);
             _btnOpen.BackColor = Color.FromArgb(30, 184, 214);
             _btnOpen.ForeColor = Color.FromArgb(4, 18, 24);
-            _btnOpen.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold);
+            _btnOpen.Font = new Font("Microsoft YaHei UI", 8.5F, FontStyle.Bold);
             _btnOpen.Click += delegate { OpenBrowser(); };
             Controls.Add(_btnOpen);
 
             _chkAutoStart = new CheckBox();
-            _chkAutoStart.Text = "开机自动启动";
+            _chkAutoStart.Text = "开机自启";
             _chkAutoStart.ForeColor = Color.FromArgb(166, 188, 204);
             _chkAutoStart.AutoSize = true;
-            _chkAutoStart.Location = new Point(187, 337);
+            _chkAutoStart.Location = new Point(266, 346);
             _chkAutoStart.CheckedChanged += AutoStartChanged;
             Controls.Add(_chkAutoStart);
 
             // Display layout switch: cycles 自动 → 横屏 → 竖屏 → 自动.
             // The mode is pushed to every web client via /api/stats (sys.layout).
-            _btnLayout = MakeButton(LayoutButtonText(_host.Layout), 288);
-            _btnLayout.Location = new Point(288, 330);
-            _btnLayout.Size = new Size(118, 34);
+            _btnLayout = MakeButton(LayoutButtonText(_host.Layout), 350);
+            _btnLayout.Location = new Point(350, 340);
+            _btnLayout.Size = new Size(96, 30);
+            _btnLayout.Font = new Font("Microsoft YaHei UI", 8.5F, FontStyle.Regular);
             _btnLayout.Click += delegate { CycleLayout(); };
             Controls.Add(_btnLayout);
 
-            _btnExit = MakeButton("退出", 420);
-            _btnExit.Location = new Point(420, 330);
-            _btnExit.Size = new Size(102, 34);
+            _btnExit = MakeButton("退出", 452);
+            _btnExit.Location = new Point(452, 340);
+            _btnExit.Size = new Size(70, 30);
+            _btnExit.Font = new Font("Microsoft YaHei UI", 8.5F, FontStyle.Regular);
             _btnExit.Click += delegate { ExitApp(); };
             Controls.Add(_btnExit);
 
@@ -277,6 +294,10 @@ namespace LanPerfMon
             copy.Click += delegate { CopyUrl(); };
             menu.Items.Add(copy);
 
+            ToolStripMenuItem diag = new ToolStripMenuItem("复制诊断令牌");
+            diag.Click += delegate { CopyDebugToken(); };
+            menu.Items.Add(diag);
+
             menu.Items.Add(new ToolStripSeparator());
 
             _trayAutoStart = new ToolStripMenuItem("开机自动启动");
@@ -311,8 +332,34 @@ namespace LanPerfMon
         private int _trayRetryCount;
         private DateTime _startedAt = DateTime.Now;
 
+        /// <summary>
+        /// Id of the "TaskbarCreated" broadcast. Explorer sends it whenever the
+        /// notification area is (re)created -- right after logon, and after an
+        /// Explorer crash/restart. Without handling it the tray icon silently
+        /// disappears and never comes back.
+        /// </summary>
+        private static readonly int TaskbarCreatedMessage =
+            Native.RegisterWindowMessage("TaskbarCreated");
+
         /// <summary>Number of completed tray re-registration passes (for /api/debug).</summary>
         internal static int TrayRetryDone;
+
+        /// <summary>Number of TaskbarCreated broadcasts handled (for /api/debug).</summary>
+        internal static int TaskbarRecreatedCount;
+
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+
+            // Explorer restarted (or just finished creating the notification area):
+            // our icon handle is gone, so re-add it immediately.
+            if (TaskbarCreatedMessage != 0 && m.Msg == TaskbarCreatedMessage)
+            {
+                TaskbarRecreatedCount++;
+                Log.Write("WM_TASKBARCREATED received (count=" + TaskbarRecreatedCount + ")");
+                ReRegisterTray();
+            }
+        }
 
         /// <summary>
         /// Force Shell_NotifyIcon(NIM_DELETE + NIM_ADD) by toggling Visible.
@@ -342,6 +389,11 @@ namespace LanPerfMon
             {
                 _btnCopy.Text = "复制地址";
                 _copyResetAt = DateTime.MinValue;
+            }
+            if (_diagResetAt != DateTime.MinValue && DateTime.Now >= _diagResetAt)
+            {
+                _btnDiagToken.Text = "复制诊断令牌";
+                _diagResetAt = DateTime.MinValue;
             }
 
             if (_trayRetryCount < TrayRetrySeconds.Length &&
@@ -420,6 +472,27 @@ namespace LanPerfMon
                 MessageBox.Show(error, "端口切换失败", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 if (_host.Port > 0)
                     _numPort.Value = _host.Port;
+            }
+        }
+
+        /// <summary>
+        /// Copies the diagnostic token and a ready-to-use URL to the clipboard.
+        /// Only reachable from this window / the tray menu, never from the network.
+        /// </summary>
+        private void CopyDebugToken()
+        {
+            try
+            {
+                string url = "http://127.0.0.1:" + _host.Port + "/api/debug?token=" + DebugAccess.Token;
+                Clipboard.SetText(url);
+                _btnDiagToken.Text = "已复制";
+                _diagResetAt = DateTime.Now.AddSeconds(2);
+                Log.Write("Debug token copied to clipboard");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("复制失败：" + ex.Message, "诊断令牌",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
