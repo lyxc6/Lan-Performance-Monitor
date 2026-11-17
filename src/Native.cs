@@ -81,6 +81,14 @@ namespace LanPerfMon
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool SetHandleInformation(IntPtr handle, uint mask, uint flags);
 
+        /// <summary>OEM code page of this machine (e.g. 936 on zh-CN); what console tools emit.</summary>
+        [DllImport("kernel32.dll")]
+        public static extern uint GetOEMCP();
+
+        /// <summary>ANSI code page of this machine.</summary>
+        [DllImport("kernel32.dll")]
+        public static extern uint GetACP();
+
         public static bool IsElevated
         {
             get

@@ -174,7 +174,9 @@ namespace LanPerfMon
                     {
                         _status = exitCode == 0 ? "PresentMon 已退出" : "PresentMon 退出码 " + exitCode;
                         if (!string.IsNullOrEmpty(_lastError))
-                            _status = _lastError;
+                            _status = FriendlyStatus(_lastError, _lastError);
+                        if (!Native.IsElevated && exitCode != 0)
+                            _status = "需要管理员权限才能采集 FPS";
                     }
                     _process = null;
                 }
@@ -243,8 +245,32 @@ namespace LanPerfMon
             _lastError = Shorten(text, 200);
             lock (_sync)
             {
-                _status = _lastError;
+                _status = FriendlyStatus(text, _lastError);
             }
+        }
+
+        /// <summary>
+        /// PresentMon reports ETW permission problems in English (for example
+        /// "Startup failed: ... \"Performance Log Users\" user group ...", exit code 6).
+        /// That raw text used to reach the web UI verbatim, which is unreadable for
+        /// a Chinese-only user, so map the known permission cases to Chinese while
+        /// keeping the original line in the log.
+        /// </summary>
+        private static string FriendlyStatus(string raw, string fallback)
+        {
+            if (string.IsNullOrEmpty(raw))
+                return fallback;
+
+            string lower = raw.ToLowerInvariant();
+            if (lower.IndexOf("performance log users", StringComparison.Ordinal) >= 0 ||
+                lower.IndexOf("access denied", StringComparison.Ordinal) >= 0 ||
+                lower.IndexOf("elevated", StringComparison.Ordinal) >= 0)
+            {
+                Log.Write("FpsMonitor: permission denied, raw output: " + Shorten(raw, 200));
+                return "需要管理员权限才能采集 FPS";
+            }
+
+            return fallback;
         }
 
         private void ParseCsvLine(string line)

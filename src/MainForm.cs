@@ -59,8 +59,12 @@ namespace LanPerfMon
 
             _loading = true;
             _numPort.Value = _host.Port > 0 ? _host.Port : _host.Config.Port;
-            _chkAutoStart.Checked = _host.Config.AutoStart;
-            _trayAutoStart.Checked = _host.Config.AutoStart;
+            // The checkbox reflects whether the scheduled task actually exists, not
+            // just the ini flag: after a system restore or a manual schtasks /delete
+            // the ini can still say autostart=1 while nothing will start at logon.
+            bool autoStartReal = AutoStartTaskExists(_host);
+            _chkAutoStart.Checked = autoStartReal;
+            _trayAutoStart.Checked = autoStartReal;
             _loading = false;
 
             // Reflect the persisted layout in the button + status line.
@@ -455,6 +459,41 @@ namespace LanPerfMon
                 MessageBox.Show("打开浏览器失败：" + ex.Message, "打开监控页面",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+        }
+
+        /// <summary>
+        /// True when the "LanPerfMon" scheduled task exists. Used so the checkbox
+        /// reflects reality rather than a possibly stale ini flag.
+        /// </summary>
+        private static bool AutoStartTaskExists(AppHost host)
+        {
+            string output;
+            int code;
+            try
+            {
+                code = NetInfo.RunHidden("schtasks.exe", "/Query /TN \"LanPerfMon\"", out output);
+            }
+            catch
+            {
+                // Cannot ask schtasks (not elevated, or schtasks missing): fall back
+                // to the persisted flag rather than claiming autostart is off.
+                return host.Config.AutoStart;
+            }
+
+            if (code == 0)
+                return true;
+
+            // Non-existing task is the normal "off" case. schtasks localises this
+            // message (Chinese "找不到" on zh-CN, English on an en-US system, which
+            // this machine actually produces), so match both.
+            if (output.IndexOf("找不到", StringComparison.Ordinal) >= 0 ||
+                output.IndexOf("cannot find", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                output.IndexOf("not find", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                output.IndexOf("does not exist", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return false;
+            }
+            return host.Config.AutoStart;
         }
 
         private void AutoStartChanged(object sender, EventArgs e)

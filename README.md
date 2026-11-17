@@ -26,15 +26,22 @@
 | 托盘 | 关闭窗口后留在托盘；可复制地址、打开页面、开机自启、退出 |
 | 单文件 | 所有托管依赖、网页、图标、PresentMon 均嵌入一个 exe |
 
-已验证环境：
+当前验证环境（编写本 README 时实测）：
 
-- Windows 11（10.0.26100）
+- Windows 11 专业版（10.0.26300）
 - Intel Core i5-12600KF
-- Intel Arc B580 Graphics（驱动 32.0.101.8974）
-- .NET Framework 4.8
-- PawnIO 2.2（CPU 温度/功耗/电压所需的传感器驱动）
-- Intel Graphics Software（提供 IGCL `ControlLib.dll`）
+- NVIDIA GeForce RTX 3080（驱动 32.0.16.1062）
+- 4 × 16 GB DDR4-3200（Micron）
+- .NET Framework 4.8（4.8.09221）
 - PresentMon 2.6.0（FPS，随 exe 内嵌）
+- **未安装 PawnIO** — 因此 CPU 温度/功耗/电压显示 `--`，其余项正常
+
+> 历史验证环境（早期在另一台机器上验证过，本仓库当前测试范围不含该配置）：
+> Windows 11 10.0.26100、Intel Arc B580 Graphics（驱动 32.0.101.8974）、PawnIO 2.2、
+> Intel Graphics Software。
+>
+> 需要说明的是：**GPU 数据在各版本中均由 LibreHardwareMonitorLib 读取**，
+> 代码中没有任何 IGCL / `ControlLib.dll` 直读实现（见第 4 节）。
 
 ---
 
@@ -80,6 +87,11 @@ LanPerfMon.exe --port 9000
 
 勾选主窗口或托盘菜单里的“开机自动启动”。程序会创建一个名为 `LanPerfMon` 的 Windows 计划任务，登录时以最高权限启动，避免每次登录都弹 UAC。
 
+注意：复选框的勾选状态会同时写入 `LanPerfMon.ini` 的 `autostart=`。若计划任务被外部删除
+（例如手动 `schtasks /delete`、系统还原、或换到新机器），ini 里可能仍是 `autostart=1`
+但实际不会自启；此时取消勾选再重新勾选一次即可重建任务。
+任务是否存在可用 `schtasks /query /tn LanPerfMon` 确认。
+
 ---
 
 ## 3. iPhone 4S / iOS 6.1.3 兼容说明
@@ -117,16 +129,20 @@ LanPerfMon.exe --port 9000
 - CPU 占用：LHM `CPU Total`
 - CPU 频率：LHM 核心 Clock；无权限时回退 `CallNtPowerInformation`
 - CPU 电压/功耗/温度：LHM（需要管理员 + PawnIO/WinRing0 驱动）
-- GPU：Intel IGCL（`ControlLib.dll`）读取 Arc B580 的负载、频率、功耗、温度、显存
+- GPU：LHM 的 GPU 传感器（Intel / NVIDIA / AMD 通用），读取负载、频率、功耗、温度、显存
 - 内存：LHM，失败时回退 `GlobalMemoryStatusEx`
 - 内存频率：LibreHardwareMonitor 的 `SMBios.MemoryDevices`（优先 `ConfiguredSpeed`，否则额定 `Speed`）
+
+> 早期文档曾写 GPU 走 Intel IGCL（`ControlLib.dll`）直读 Arc 显卡。
+> 当前源码中不存在该实现（`IGCL` / `ControlLib` 在 `src/` 中零匹配），
+> 所有 GPU 读数均来自 LibreHardwareMonitorLib，因此 NVIDIA / AMD 显卡同样可用。
 
 如果 CPU 温度/功耗/电压显示 `--`：
 
 1. 确认 exe 是以管理员身份运行；
-2. 确认 PawnIO 已安装（本机已安装于 `C:\Program Files\PawnIO`）；
+2. 确认 PawnIO 已安装（默认安装于 `C:\Program Files\PawnIO`；不在该目录即视为未安装）；
 3. 某些 Windows 11 版本会拦截 WinRing0 类驱动，PawnIO 是更稳妥的方案；
-4. 更新 Intel Arc 驱动后，IGCL 传感器通常也会恢复。
+4. GPU 驱动更新后，LHM 的传感器通常也会恢复。
 
 ### FPS
 
@@ -149,6 +165,9 @@ LanPerfMon.exe --port 9000
 2. 确认程序以管理员身份运行（ETW 需要）；
 3. 某些杀毒软件会阻止 ETW/PresentMon，加入白名单；
 4. 同时运行 RTSS、Afterburner 等捕获工具可能冲突，先退出它们。
+5. 若页面显示"需要管理员权限才能采集 FPS"，说明非管理员运行导致
+   PresentMon 以退出码 6（ETW 权限不足）退出，右键以管理员身份运行即可。
+   PresentMon 的英文原文仍记录在日志中。
 
 ### 音量
 
@@ -205,8 +224,19 @@ app.manifest         requireAdministrator 清单
 build.ps1            csc 一键构建
 tools/lhm096/        LHM 依赖（构建时嵌入）
 tools/PresentMon.exe 构建时嵌入
-dist/                输出目录
+tools/cdp_shot.py    按视口截图（Edge headless + CDP），用于渲染验证
+tools/es5_check.py   校验 web/index.html 内联脚本为 ES5 语法
+dist/                输出目录（已在 .gitignore 中，不进版本库）
 ```
+
+版本库约定：
+
+- 本仓库用 Git 管理，`dist/`、`LanPerfMon.ini`、`tools/edge-shot-profile/`、
+  `*.log` 及 `es5_check.py` 的生成物均被忽略。
+- 工作区文件统一 LF 换行（`.gitattributes` 钉住 `eol=lf`），避免 Windows 上
+  `core.autocrlf` 造成整文件伪差异。
+- `tools/es5_check.py` 需要 `node` 可执行文件与 `tools/esprima.js`；缺失时脚本会
+  明确报错退出，不会静默跳过。
 
 构建：
 

@@ -162,6 +162,30 @@ namespace LanPerfMon
             }
         }
 
+        /// <summary>
+        /// Encoding used by console tools when their output is redirected:
+        /// the OEM code page (e.g. 936 on zh-CN). Falls back to the ANSI code page,
+        /// then to UTF-8 as a last resort.
+        /// </summary>
+        private static Encoding ConsoleEncoding()
+        {
+            try
+            {
+                int oem = (int)Native.GetOEMCP();
+                if (oem > 0)
+                    return Encoding.GetEncoding(oem);
+            }
+            catch { }
+
+            try
+            {
+                return Encoding.GetEncoding((int)Native.GetACP());
+            }
+            catch { }
+
+            return Encoding.UTF8;
+        }
+
         public static int RunHidden(string fileName, string arguments, out string output)
         {
             output = string.Empty;
@@ -174,8 +198,13 @@ namespace LanPerfMon
                 info.CreateNoWindow = true;
                 info.RedirectStandardOutput = true;
                 info.RedirectStandardError = true;
-                info.StandardOutputEncoding = Encoding.UTF8;
-                info.StandardErrorEncoding = Encoding.UTF8;
+                // netsh/schtasks write to the console code page, not UTF-8. Decoding
+                // their stderr as UTF-8 produced mojibake ("����: ϵͳ�Ҳ���..."),
+                // which made every caller's keyword check silently miss and fall back
+                // to a wrong default. Use the OEM/ANSI code page of this machine.
+                Encoding consoleEncoding = ConsoleEncoding();
+                info.StandardOutputEncoding = consoleEncoding;
+                info.StandardErrorEncoding = consoleEncoding;
 
                 using (Process process = Process.Start(info))
                 {
