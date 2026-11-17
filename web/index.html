@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#05080c">
+<link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png">
+<title>PERF MON</title>
+<style>
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #05080c;
+    overflow: hidden;
+}
+body {
+    font-family: "Helvetica Neue", Helvetica, "Heiti SC", "Microsoft YaHei", Arial, sans-serif;
+    color: #e2eef6;
+    -webkit-text-size-adjust: none;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-font-smoothing: antialiased;
+}
+* {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+#app {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #05080c;
+    background-image: -webkit-linear-gradient(top, #08131c 0%, #05080c 48%, #04060a 100%);
+}
+#main {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 46px;
+    bottom: 0;
+    padding: 7px 7px 5px 8px;
+}
+#top {
+    position: absolute;
+    top: 7px;
+    left: 8px;
+    right: 0;
+    height: 27px;
+}
+.brand {
+    position: absolute;
+    left: 0;
+    top: 1px;
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    font-size: 13px;
+    line-height: 18px;
+    letter-spacing: 2px;
+    color: #dff9ff;
+    font-weight: bold;
+}
+.brand span {
+    color: #5cecff;
+}
+.liveDot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 5px;
+    border-radius: 3px;
+    background: #55f2a8;
+    box-shadow: 0 0 7px rgba(85,242,168,0.85);
+    vertical-align: 1px;
+}
+#host {
+    position: absolute;
+    right: 104px;
+    top: 3px;
+    width: 96px;
+    height: 16px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: right;
+    font-size: 8px;
+    line-height: 16px;
+    color: #7792a5;
+}
+#clock {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 70px;
+    text-align: right;
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: bold;
+    color: #d9effc;
+    letter-spacing: 0.3px;
+}
+/* In-page orientation toggle: works even when the exe button cannot reach
+   the phone, and on iOS 6 where orientation detection is unreliable.
+   Kept narrow (single glyph + arrow) so the host name stays readable. */
+#orientBtn {
+    position: absolute;
+    right: 76px;
+    top: 1px;
+    width: 24px;
+    height: 17px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid rgba(92,236,255,0.45);
+    border-radius: 4px;
+    background: rgba(12,32,44,0.9);
+    color: #5cecff;
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    font-size: 11px;
+    line-height: 15px;
+    font-weight: bold;
+    -webkit-appearance: none;
+    outline: none;
+}
+#orientBtn:active {
+    background: #173344;
+}
+.land #orientBtn {
+    border-color: rgba(255,180,84,0.55);
+    color: #ffb454;
+}
+#content {
+    position: absolute;
+    top: 37px;
+    left: 0;
+    right: 0;
+    bottom: 4px;
+}
+.card {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border: 1px solid rgba(74,112,136,0.30);
+    border-radius: 10px;
+    background: #0b141c;
+    background-image: -webkit-linear-gradient(top, rgba(22,38,51,0.94) 0%, rgba(7,14,20,0.97) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 5px 16px rgba(0,0,0,0.34);
+    overflow: hidden;
+}
+.card .accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #5cecff;
+    z-index: 3;
+}
+#cpu {
+    top: 0;
+    height: 21%;
+}
+#gpu {
+    top: 24%;
+    bottom: 55%;
+    border-color: rgba(139,112,242,0.30);
+}
+#gpu .accent { background: #a78bfa; }
+#bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 52%;
+}
+#ram, #fps {
+    top: 0;
+    bottom: 0;
+}
+#ram {
+    right: 51%;
+    border-color: rgba(78,180,135,0.28);
+}
+#ram .accent { background: #63e6a8; }
+#fps {
+    left: 51%;
+    border-color: rgba(255,173,84,0.28);
+}
+#fps .accent { background: #ffb454; }
+.cardInner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+}
+.cardHead {
+    position: absolute;
+    top: 5px;
+    left: 10px;
+    right: 8px;
+    height: 18px;
+}
+.tag {
+    position: absolute;
+    left: 0;
+    top: 1px;
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    font-size: 9px;
+    line-height: 12px;
+    letter-spacing: 1.4px;
+    color: #5cecff;
+    font-weight: bold;
+}
+#gpu .tag { color: #b59cff; }
+#ram .tag { color: #63e6a8; }
+#fps .tag { color: #ffb454; }
+.name {
+    position: absolute;
+    left: 32px;
+    right: 0;
+    top: 1px;
+    height: 13px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 8px;
+    line-height: 13px;
+    color: #7f9aad;
+}
+.gauges {
+    position: absolute;
+    top: 21px;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+}
+.gauge {
+    position: relative;
+    float: left;
+    width: 20%;
+    height: 100%;
+    text-align: center;
+}
+.gaugeInner {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+}
+.ring {
+    position: relative;
+    width: 62px;
+    height: 62px;
+    margin: 0 auto;
+}
+.ring svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+.ringTrack {
+    fill: none;
+    stroke: rgba(118,148,168,0.20);
+    stroke-width: 10;
+    stroke-linecap: round;
+}
+.ringFill {
+    fill: none;
+    stroke: #5cecff;
+    stroke-width: 10;
+    stroke-linecap: round;
+    -webkit-transition: stroke-dashoffset 0.35s ease;
+}
+#gpu .ringFill { stroke: #a78bfa; }
+.gv {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 24px;
+    margin-top: -12px;
+    text-align: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    letter-spacing: -0.5px;
+    text-shadow: 0 0 6px rgba(255,255,255,0.28);
+}
+#gpu .gv { color: #ffffff; }
+.gv small {
+    font-size: 9px;
+    line-height: 9px;
+    font-weight: 500;
+    color: #9db4c6;
+    margin-left: 1px;
+    letter-spacing: 0;
+}
+.gv small.deg {
+    font-size: 11px;
+    position: relative;
+    top: -0.5em;
+    color: #d7e4ee;
+}
+.gvSub {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    text-align: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 9px;
+    line-height: 10px;
+    font-weight: 600;
+    color: #9db4c6;
+    white-space: nowrap;
+}
+.gl {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 78%;
+    margin-top: 0;
+    height: 15px;
+    font-size: 12px;
+    line-height: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #e6f0fa;
+    text-align: center;
+    white-space: nowrap;
+}
+#ramFill {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 0;
+    background: #63e6a8;
+    opacity: 0.22;
+    z-index: 0;
+    -webkit-transition: height 0.5s ease, background 0.5s ease;
+}
+#ram .big {
+    position: absolute;
+    right: 6px;
+    top: -5px;
+    height: 30px;
+    text-align: right;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 22px;
+    line-height: 30px;
+    font-weight: 300;
+    color: #effff7;
+    white-space: nowrap;
+}
+#ram .big em {
+    font-style: normal;
+    font-size: 9px;
+    color: #7f9aad;
+    margin-left: 1px;
+}
+#ram .name {
+    left: 26px;
+    right: 36px;
+}
+.name #ramFreq {
+    font-size: 7px;
+    color: #9fc9b8;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    margin-left: 2px;
+}
+#ramBarWrap {
+    position: absolute;
+    left: 9px;
+    right: 9px;
+    top: 39px;
+    height: 7px;
+    border-radius: 4px;
+    background: rgba(116,151,173,0.16);
+    overflow: hidden;
+    z-index: 3;
+}
+#ramBar {
+    display: block;
+    width: 0;
+    height: 7px;
+    border-radius: 4px;
+    background: #63e6a8;
+    -webkit-transition: width 0.5s ease, background 0.5s ease;
+}
+#ramDetail {
+    position: absolute;
+    left: 9px;
+    right: 9px;
+    bottom: 7px;
+    height: 19px;
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 19px;
+    color: #eafff5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 3;
+    letter-spacing: 0.3px;
+}
+#fps .name {
+    left: 33px;
+    right: 6px;
+    top: 2px;
+    font-size: 7px;
+}
+.fpsRow {
+    position: absolute;
+    left: 9px;
+    right: 6px;
+    top: 12px;
+    height: 30px;
+    white-space: nowrap;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.fpsAvg {
+    display: inline-block;
+    vertical-align: baseline;
+}
+.fpsAvg b {
+    font-size: 25px;
+    line-height: 27px;
+    font-weight: 300;
+    color: #fff8ef;
+}
+.fpsAvg small {
+    font-size: 7px;
+    color: #8c7c69;
+    margin-left: 2px;
+}
+.fpsLow {
+    display: inline-block;
+    vertical-align: baseline;
+    margin-left: 10px;
+}
+.fpsLow small {
+    display: inline;
+    font-size: 6px;
+    color: #8c7c69;
+    letter-spacing: 0.4px;
+    margin-right: 3px;
+}
+.fpsLow b {
+    font-size: 16px;
+    line-height: 18px;
+    font-weight: 400;
+    color: #d7b78d;
+}
+.chartWrap {
+    position: absolute;
+    left: 9px;
+    right: 9px;
+    top: 46px;
+    bottom: 4px;
+}
+#fpsChart {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#vol {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 46px;
+    background: #09121a;
+    background-image: -webkit-linear-gradient(left, rgba(7,14,20,0.86), rgba(10,20,29,0.98));
+    border-left: 1px solid rgba(74,112,136,0.30);
+    text-align: center;
+}
+#volVal {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    height: 29px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 21px;
+    line-height: 29px;
+    font-weight: 300;
+    color: #5cecff;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+#volVal em {
+    font-style: normal;
+    font-size: 8px;
+    color: #6f899b;
+    margin-left: 0;
+}
+#volLabel {
+    position: absolute;
+    top: 37px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    font-size: 7px;
+    line-height: 12px;
+    letter-spacing: 1.6px;
+    color: #5d7788;
+}
+#volRail {
+    position: absolute;
+    top: 54px;
+    bottom: 55px;
+    left: 8px;
+    width: 30px;
+}
+#volTrack {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 12px;
+    width: 6px;
+    border-radius: 3px;
+    background: #172531;
+    overflow: hidden;
+}
+#volFill {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50%;
+    border-radius: 3px;
+    background: #5cecff;
+}
+#volThumb {
+    position: absolute;
+    left: 4px;
+    width: 22px;
+    height: 12px;
+    margin-bottom: -6px;
+    bottom: 50%;
+    border-radius: 3px;
+    background: #e8fdff;
+    box-shadow: 0 0 8px rgba(92,236,255,0.55), 0 1px 2px rgba(0,0,0,0.5);
+}
+#volMuted {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 64px;
+    height: 12px;
+    font-family: Consolas, Menlo, "Courier New", monospace;
+    font-size: 7px;
+    line-height: 12px;
+    color: #ffb454;
+    opacity: 0;
+}
+#mute {
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    bottom: 11px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgba(74,112,136,0.36);
+    border-radius: 6px;
+    background: #10212d;
+    color: #9ecedd;
+    font-family: "Helvetica Neue", Helvetica, "Heiti SC", Arial, sans-serif;
+    font-size: 9px;
+    line-height: 30px;
+    -webkit-appearance: none;
+    outline: none;
+}
+#mute:active {
+    background: #173344;
+}
+/* Orientation layout for phones. Driven by the html.land class (set from JS)
+   instead of @media (orientation), which iOS 6.1.3 Safari evaluates
+   unreliably after rotation (it can keep reporting landscape in portrait). */
+.land #main { padding: 4px 6px 3px 7px; }
+.land #top { top: 3px; }
+.land #content { top: 29px; bottom: 22px; }
+.land #cpu { height: 33%; }
+.land #gpu { top: 35%; bottom: 32%; }
+.land #bottom { height: 30%; }
+.land .cardHead { top: 4px; }
+.land .gauges { top: 19px; }
+/* CPU/GPU: header moves to a left-side column so the gauges use the
+   full card height instead of losing the top strip. */
+.land #cpu .cardHead, .land #gpu .cardHead {
+    top: 50%;
+    left: 5px;
+    right: auto;
+    width: 64px;
+    height: auto;
+    transform: translateY(-50%);
+    -webkit-transform: translateY(-50%);
+}
+.land #cpu .tag, .land #gpu .tag {
+    position: static;
+    display: block;
+    margin-bottom: 3px;
+}
+.land #cpu .name, .land #gpu .name {
+    position: static;
+    display: block;
+    width: 64px;
+    height: auto;
+    max-height: 48px;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: clip;
+    font-size: 7px;
+    line-height: 9px;
+}
+.land #cpu .gauges, .land #gpu .gauges {
+    top: 1px;
+    bottom: 1px;
+    left: 74px;
+    right: 1px;
+}
+.land .gl { font-size: 11px; }
+.land .fpsRow { top: 11px; }
+.land .chartWrap { top: 43px; }
+.land #ramBarWrap { top: 36px; }
+.land #ramDetail { bottom: 5px; }
+@media (min-width: 620px) {
+    #main {
+        right: 64px;
+        left: 0;
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 12px 16px 8px 16px;
+    }
+    #top { top: 12px; left: 16px; right: 0; }
+    #host { right: 92px; width: 190px; font-size: 10px; }
+    #clock { font-size: 16px; width: 84px; line-height: 22px; }
+    #content { top: 49px; bottom: 31px; }
+    .cardHead { top: 8px; left: 16px; right: 13px; height: 22px; }
+    .tag { font-size: 11px; top: 2px; }
+    .name { left: 42px; top: 2px; font-size: 10px; }
+    .gauges { top: 31px; left: 8px; right: 8px; }
+    .gl { font-size: 12px; height: 15px; line-height: 15px; }
+    .gv small { font-size: 9px; }
+    #ramBarWrap { top: 54px; height: 9px; }
+    #ramBar { height: 9px; }
+    #ramDetail { bottom: 11px; font-size: 17px; height: 23px; line-height: 23px; }
+    #ram .big { font-size: 37px; line-height: 39px; height: 40px; }
+    #ram .big em { font-size: 12px; }
+    .fpsRow { top: 17px; height: 36px; }
+    .fpsAvg b { font-size: 34px; line-height: 36px; }
+    .fpsAvg small { font-size: 9px; }
+    .fpsLow b { font-size: 21px; line-height: 24px; }
+    .fpsLow small { font-size: 8px; line-height: 9px; }
+    .chartWrap { top: 58px; bottom: 9px; }
+    #foot { font-size: 10px; height: 18px; line-height: 18px; }
+    #vol { width: 64px; }
+    #volVal { font-size: 26px; height: 34px; line-height: 34px; }
+    #volLabel { top: 44px; font-size: 9px; }
+    #volRail { top: 64px; bottom: 68px; left: 17px; }
+    #mute { left: 8px; right: 8px; bottom: 15px; height: 38px; line-height: 36px; font-size: 11px; }
+}
+</style>
+<script>
+/* Orientation handling for iOS 6.1.3 Safari: the @media (orientation)
+   feature is evaluated unreliably there, so the phone landscape layout is
+   driven by an html.land class computed from window.orientation (primary on
+   iOS/Android) and the viewport aspect ratio (fallback on desktop). */
+(function () {
+    function updateLandClass() {
+        try {
+            var el = document.documentElement;
+            var w = el.clientWidth || window.innerWidth || 0;
+            var h = el.clientHeight || window.innerHeight || 0;
+            var land;
+            var forced = window.__forceLayout || "auto";
+            if (forced === "landscape") {
+                land = true;
+            } else if (forced === "portrait") {
+                land = false;
+            } else {
+                // Auto: viewport aspect ratio is the primary signal;
+                // window.orientation (90/-90 = landscape) is an OR-fallback
+                // because on old iOS dimensions can be stale right after a
+                // rotation.
+                land = (w > h);
+                if (typeof window.orientation === "number" && !isNaN(window.orientation) &&
+                    Math.abs(window.orientation) === 90) {
+                    land = true;
+                }
+            }
+            land = land && (w <= 619);
+            var cls = el.className || "";
+            var has = (" " + cls + " ").indexOf(" land ") >= 0;
+            if (land && !has) {
+                el.className = (cls + " land").replace(/^\s+/, "");
+                window.__landChanged = true;
+            } else if (!land && has) {
+                el.className = cls.replace(/\s*\bland\b/, "");
+                window.__landChanged = true;
+            }
+        } catch (e) { }
+    }
+    window.updateLandClass = updateLandClass;
+    updateLandClass();
+    if (window.addEventListener) {
+        window.addEventListener("load", updateLandClass, false);
+        window.addEventListener("resize", updateLandClass, false);
+        window.addEventListener("orientationchange", function () {
+            updateLandClass();
+            setTimeout(updateLandClass, 300);
+        }, false);
+    }
+})();
+</script>
+</head>
+<body>
+<div id="app">
+    <div id="main">
+        <div id="top">
+            <div class="brand"><span class="liveDot" id="liveDot"></span>PERF<span>MON</span></div>
+            <div id="host">--</div>
+            <div id="clock">--:--</div>
+            <button id="orientBtn" type="button">横屏</button>
+        </div>
+        <div id="content">
+            <div class="card" id="cpu">
+                <div class="accent"></div>
+                <div class="cardInner">
+                    <div class="cardHead">
+                        <span class="tag">CPU</span>
+                        <span class="name" id="cpuName">正在读取…</span>
+                    </div>
+                    <div class="gauges">
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="cpuLoadArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="cpuLoad">--</div>
+                            </div>
+                            <div class="gl">占用</div></div>
+                        </div>
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="cpuTempArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="cpuTemp">--</div>
+                            </div>
+                            <div class="gl">温度</div></div>
+                        </div>
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="cpuPowerArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="cpuPower">--</div>
+                            </div>
+                            <div class="gl">功耗</div></div>
+                        </div>
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="cpuFreqArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="cpuFreq">--</div>
+                            </div>
+                            <div class="gl">频率</div></div>
+                        </div>
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="cpuVoltArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="cpuVolt">--</div>
+                            </div>
+                            <div class="gl">电压</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" id="gpu">
+                <div class="accent"></div>
+                <div class="cardInner">
+                    <div class="cardHead">
+                        <span class="tag">GPU</span>
+                        <span class="name" id="gpuName">正在读取…</span>
+                    </div>
+                    <div class="gauges">
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="gpuLoadArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="gpuLoad">--</div>
+                            </div>
+                            <div class="gl">占用</div></div>
+                        </div>
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="gpuTempArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="gpuTemp">--</div>
+                            </div>
+                            <div class="gl">温度</div></div>
+                        </div>
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="gpuPowerArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="gpuPower">--</div>
+                            </div>
+                            <div class="gl">功耗</div></div>
+                        </div>
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="gpuFreqArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="gpuFreq">--</div>
+                            </div>
+                            <div class="gl">频率</div></div>
+                        </div>
+                        <div class="gauge">
+                            <div class="gaugeInner"><div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <path class="ringTrack" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"/>
+                                    <path class="ringFill" id="gpuVramArc" d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3"
+                                          stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+                                </svg>
+                                <div class="gv" id="gpuVram">--</div>
+                                <div class="gvSub" id="gpuVramSub"></div>
+                            </div>
+                            <div class="gl" id="gpuVramLabel">显存</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="bottom">
+                <div class="card" id="ram">
+                    <div id="ramFill"></div>
+                    <div class="accent"></div>
+                    <div class="cardInner">
+                        <div class="cardHead">
+                            <span class="tag">RAM</span>
+                            <span class="name" id="ramName">内存<b id="ramFreq"></b></span>
+                            <div class="big"><span id="ramPercent">--</span><em>%</em></div>
+                        </div>
+                        <div id="ramBarWrap"><i id="ramBar"></i></div>
+                        <div id="ramDetail">--</div>
+                    </div>
+                </div>
+                <div class="card" id="fps">
+                    <div class="accent"></div>
+                    <div class="cardInner">
+                        <div class="cardHead">
+                            <span class="tag">FPS</span>
+                            <span class="name" id="fpsApp">等待游戏</span>
+                        </div>
+                        <div class="fpsRow">
+                            <span class="fpsAvg"><b id="fpsVal">--</b><small>FPS</small></span><span class="fpsLow"><small>1%LOW</small><b id="fpsLow">--</b></span>
+                        </div>
+                        <div class="chartWrap"><canvas id="fpsChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="vol">
+        <div id="volVal">--<em>%</em></div>
+        <div id="volLabel">VOL</div>
+        <div id="volRail">
+            <div id="volTrack"><div id="volFill"></div></div>
+            <div id="volThumb"></div>
+        </div>
+        <div id="volMuted">MUTE</div>
+        <button id="mute" type="button">静音</button>
+    </div>
+</div>
+<script>
+(function () {
+    "use strict";
+
+    var state = {
+        dragging: false,
+        volume: null,
+        mute: false,
+        online: false,
+        sendTimer: null,
+        lastSent: -1
+    };
+    var fpsHistory = [];
+    var chartWidth = 0;
+    var chartHeight = 0;
+    var chartDpr = 1;
+
+    function $(id) {
+        return document.getElementById(id);
+    }
+
+    function text(id, value) {
+        var el = $(id);
+        if (el) el.textContent = value;
+    }
+
+    function clamp(value, minimum, maximum) {
+        if (value < minimum) return minimum;
+        if (value > maximum) return maximum;
+        return value;
+    }
+
+    function isNum(value) {
+        return value !== null && typeof value !== "undefined" && isFinite(value);
+    }
+
+    function setOnline(online) {
+        state.online = online;
+        var dot = $("liveDot");
+        if (dot) {
+            dot.style.background = online ? "#55f2a8" : "#ff6b6b";
+            dot.style.boxShadow = online ? "0 0 7px rgba(85,242,168,0.85)" : "0 0 7px rgba(255,107,107,0.8)";
+        }
+        text("status", online ? "在线 · LIVE" : "离线 · 重试中");
+        var status = $("status");
+        if (status) status.style.color = online ? "#67eda9" : "#ff7d7d";
+    }
+
+    function renderVolume() {
+        if (!isNum(state.volume)) {
+            text("volVal", "--");
+            return;
+        }
+        var value = Math.round(clamp(state.volume, 0, 100));
+        var val = $("volVal");
+        if (val) val.innerHTML = value + "<em>%</em>";
+        if (val) val.style.color = state.mute ? "#ffb454" : "#5cecff";
+
+        var fill = $("volFill");
+        var thumb = $("volThumb");
+        if (fill) fill.style.height = value + "%";
+        if (thumb) thumb.style.bottom = value + "%";
+
+        var muted = $("volMuted");
+        if (muted) muted.style.opacity = state.mute ? "1" : "0";
+
+        var button = $("mute");
+        if (button) button.textContent = state.mute ? "取消" : "静音";
+    }
+
+    function applyVolumeFromY(clientY) {
+        var rail = $("volRail");
+        if (!rail) return;
+        var rect = rail.getBoundingClientRect();
+        if (rect.height <= 0) return;
+        var percent = (rect.bottom - clientY) * 100 / rect.height;
+        percent = Math.round(clamp(percent, 0, 100));
+        state.volume = percent;
+        renderVolume();
+        scheduleVolume(percent);
+    }
+
+    function scheduleVolume(percent) {
+        if (state.sendTimer) return;
+        state.sendTimer = setTimeout(function () {
+            state.sendTimer = null;
+            if (isNum(state.volume)) sendVolume(Math.round(state.volume));
+        }, 80);
+    }
+
+    function sendVolume(percent) {
+        if (percent === state.lastSent) return;
+        state.lastSent = percent;
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/volume", true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) return;
+            if (xhr.status !== 200) return;
+            try {
+                var data = JSON.parse(xhr.responseText);
+                if (data && data.available) {
+                    state.volume = data.value;
+                    state.mute = data.mute;
+                    if (!state.dragging) renderVolume();
+                }
+            } catch (e) { }
+        };
+        xhr.send("v=" + percent);
+    }
+
+    function toggleMute() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/volume", true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) return;
+            if (xhr.status !== 200) return;
+            try {
+                var data = JSON.parse(xhr.responseText);
+                if (data && data.available) {
+                    state.volume = data.value;
+                    state.mute = data.mute;
+                    state.lastSent = -1;
+                    renderVolume();
+                }
+            } catch (e) { }
+        };
+        xhr.send("mute=toggle");
+    }
+
+    function bindSlider() {
+        var rail = $("volRail");
+        if (!rail) return;
+
+        function onStart(event) {
+            state.dragging = true;
+            var point = event.touches ? event.touches[0] : event;
+            if (point) applyVolumeFromY(point.clientY);
+            if (event.preventDefault) event.preventDefault();
+            return false;
+        }
+
+        function onMove(event) {
+            if (!state.dragging) return;
+            var point = event.touches ? event.touches[0] : event;
+            if (point) applyVolumeFromY(point.clientY);
+            if (event.preventDefault) event.preventDefault();
+            return false;
+        }
+
+        function onEnd(event) {
+            if (!state.dragging) return;
+            state.dragging = false;
+            if (state.sendTimer) {
+                clearTimeout(state.sendTimer);
+                state.sendTimer = null;
+            }
+            if (isNum(state.volume)) {
+                sendVolume(Math.round(state.volume));
+                state.lastSent = -1;
+            }
+            if (event && event.preventDefault) event.preventDefault();
+        }
+
+        rail.addEventListener("touchstart", onStart, false);
+        rail.addEventListener("touchmove", onMove, false);
+        rail.addEventListener("touchend", onEnd, false);
+        rail.addEventListener("touchcancel", onEnd, false);
+        rail.addEventListener("mousedown", onStart, false);
+
+        document.addEventListener("mousemove", function (event) {
+            if (state.dragging) onMove(event);
+        }, false);
+        document.addEventListener("mouseup", function (event) {
+            if (state.dragging) onEnd(event);
+        }, false);
+
+        document.addEventListener("touchmove", function (event) {
+            if (state.dragging && event.preventDefault) event.preventDefault();
+        }, false);
+        document.addEventListener("gesturestart", function (event) {
+            if (event.preventDefault) event.preventDefault();
+        }, false);
+
+        var mute = $("mute");
+        if (mute) mute.addEventListener("click", toggleMute, false);
+    }
+
+    function setGauge(arcId, valueId, arcValue, maxValue, display, unit) {
+        var percent = 0;
+        if (isNum(arcValue) && isNum(maxValue) && maxValue > 0) {
+            percent = clamp(arcValue * 100 / maxValue, 0, 100);
+        }
+        var offset = (188.5 * (1 - percent / 100)).toFixed(2);
+        var arc = $(arcId);
+        if (arc) arc.setAttribute("stroke-dashoffset", offset);
+
+        var el = $(valueId);
+        if (!el) return;
+        if (display === null || typeof display === "undefined") {
+            el.innerHTML = "--";
+        } else if (unit === "°") {
+            el.innerHTML = display + "<small class=\"deg\">°</small>";
+        } else {
+            el.innerHTML = display + (unit ? "<small>" + unit + "</small>" : "");
+        }
+    }
+
+    function formatGb(gb) {
+        if (!isNum(gb)) return "--";
+        return gb.toFixed(1) + " GB";
+    }
+
+    function ramDetail(used, total) {
+        if (!isNum(used) || !isNum(total)) return "--";
+        return used.toFixed(1) + " / " + total.toFixed(1) + " GB";
+    }
+
+    function layoutGauges() {
+        var cards = [$("cpu"), $("gpu")];
+        for (var c = 0; c < cards.length; c++) {
+            var card = cards[c];
+            if (!card) continue;
+            var gauges = card.getElementsByClassName("gauges")[0];
+            var areaH = gauges ? gauges.clientHeight : (card.clientHeight - 22);
+            var cellW = (gauges ? gauges.clientWidth : card.clientWidth) / 5;
+            // Vertical budget: label sits at 78% + ~15px inside the ring group,
+            // keep >=3px clear of the card header.
+            var byHeight = (areaH - 18) / 0.78;
+            // Horizontal budget: visible circle is 90% of the box; keep >=2px
+            // gap between neighbouring circles.
+            var byWidth = (cellW - 2) / 0.9;
+            // Floor follows the available height so short viewports never
+            // overflow the card (labels sit at 78% + 15px inside the group).
+            var ringFloor = clamp(Math.floor(areaH / 0.78) - 4, 26, 40);
+            var ring = clamp(Math.floor(Math.min(byHeight, byWidth)), ringFloor, 150);
+            var rings = card.getElementsByClassName("ring");
+            var values = card.getElementsByClassName("gv");
+            var inners = card.getElementsByClassName("gaugeInner");
+            for (var i = 0; i < rings.length; i++) {
+                rings[i].style.width = ring + "px";
+                rings[i].style.height = ring + "px";
+                // Center the box inside its cell even when it is wider
+                // than the cell (visible circle still keeps its gap).
+                rings[i].style.marginLeft = ((cellW - ring) / 2) + "px";
+                rings[i].style.marginRight = "0";
+            }
+            for (var k = 0; k < inners.length; k++) {
+                var labelBottom = ring * 0.78 + 15;
+                var overflow = labelBottom > ring ? Math.ceil(labelBottom - ring) : 0;
+                inners[k].style.marginTop = (-(ring + overflow) / 2) + "px";
+            }
+            var fontSize = Math.max(13, Math.round(ring * 0.29));
+            for (var j = 0; j < values.length; j++) {
+                values[j].style.fontSize = fontSize + "px";
+                values[j].style.lineHeight = (fontSize + 8) + "px";
+                values[j].style.height = (fontSize + 8) + "px";
+                values[j].style.marginTop = (-(fontSize + 8) / 2) + "px";
+            }
+            var vramSub = $("gpuVramSub");
+            var vramValue = $("gpuVram");
+            if (vramSub && vramValue && card.id === "gpu") {
+                var subHeight = 11;
+                var openingOffset = Math.round(ring * 0.283);
+                var subTop = openingOffset - subHeight - 3;
+                vramSub.style.marginTop = subTop + "px";
+                vramSub.style.fontSize = Math.max(9, Math.round(fontSize * 0.60)) + "px";
+                vramSub.style.lineHeight = subHeight + "px";
+                vramValue.style.marginTop = (subTop - 1 - (fontSize + 8)) + "px";
+            }
+        }
+        drawFpsChart();
+    }
+
+    function pushFps(value) {
+        fpsHistory.push(isNum(value) ? value : null);
+        if (fpsHistory.length > 36) fpsHistory.shift();
+        drawFpsChart();
+    }
+
+    function drawFpsChart() {
+        var canvas = $("fpsChart");
+        if (!canvas || !canvas.parentNode) return;
+        var wrap = canvas.parentNode;
+        var width = wrap.clientWidth;
+        var height = wrap.clientHeight;
+        if (width <= 0 || height <= 0) return;
+
+        var dpr = Math.min(2, window.devicePixelRatio || 1);
+        var pixelWidth = Math.round(width * dpr);
+        var pixelHeight = Math.round(height * dpr);
+        if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+            canvas.width = pixelWidth;
+            canvas.height = pixelHeight;
+            chartWidth = width;
+            chartHeight = height;
+            chartDpr = dpr;
+        }
+
+        var ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = "rgba(255,180,84,0.09)";
+        var x;
+        for (x = 0; x < width; x += 8) {
+            ctx.beginPath();
+            ctx.moveTo(x + 0.5, 0);
+            ctx.lineTo(x + 0.5, height);
+            ctx.stroke();
+        }
+        var y;
+        for (y = 0; y < height; y += 7) {
+            ctx.beginPath();
+            ctx.moveTo(0, y + 0.5);
+            ctx.lineTo(width, y + 0.5);
+            ctx.stroke();
+        }
+
+        var max = 60;
+        var i;
+        for (i = 0; i < fpsHistory.length; i++) {
+            if (isNum(fpsHistory[i]) && fpsHistory[i] > max) max = fpsHistory[i];
+        }
+        max = max * 1.12;
+
+        var step = fpsHistory.length > 1 ? width / (fpsHistory.length - 1) : width;
+        var started = false;
+        var firstX = 0;
+        var firstY = 0;
+        var lastX = 0;
+        var lastY = 0;
+
+        ctx.beginPath();
+        for (i = 0; i < fpsHistory.length; i++) {
+            var value = fpsHistory[i];
+            if (!isNum(value)) continue;
+            x = i * step;
+            y = height - 2 - (value / max) * (height - 6);
+            if (!started) {
+                ctx.moveTo(x, y);
+                started = true;
+                firstX = x;
+                firstY = y;
+            } else {
+                ctx.lineTo(x, y);
+            }
+            lastX = x;
+            lastY = y;
+        }
+
+        if (started) {
+            ctx.lineJoin = "round";
+            ctx.lineCap = "round";
+            ctx.strokeStyle = "rgba(255,180,84,0.22)";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            var drew = false;
+            for (i = 0; i < fpsHistory.length; i++) {
+                var v = fpsHistory[i];
+                if (!isNum(v)) continue;
+                x = i * step;
+                y = height - 2 - (v / max) * (height - 6);
+                if (!drew) {
+                    ctx.moveTo(x, y);
+                    drew = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.strokeStyle = "#ffbd63";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            var grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, "rgba(255,180,84,0.16)");
+            grad.addColorStop(1, "rgba(255,180,84,0.0)");
+            ctx.beginPath();
+            ctx.moveTo(firstX, height);
+            for (i = 0; i < fpsHistory.length; i++) {
+                var vv = fpsHistory[i];
+                if (!isNum(vv)) continue;
+                ctx.lineTo(i * step, height - 2 - (vv / max) * (height - 6));
+            }
+            ctx.lineTo(lastX, height);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 2, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffe0b0";
+            ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(0, height - 2);
+            ctx.lineTo(width, height - 2);
+            ctx.strokeStyle = "rgba(255,180,84,0.25)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+    }
+
+    function renderStats(data) {
+        if (!data || data.ok !== true) {
+            setOnline(false);
+            pushFps(null);
+            return;
+        }
+
+        setOnline(true);
+        // Server-pushed display layout (set from the exe's layout button):
+        // "landscape" / "portrait" force it; "auto" restores detection.
+        var forced = (data.sys && data.sys.layout) ? data.sys.layout : "auto";
+        if (window.__forceLayout !== forced) {
+            window.__forceLayout = forced;
+            if (window.updateLandClass) window.updateLandClass();
+        }
+        if (window.__landChanged) {
+            window.__landChanged = false;
+            layoutGauges();
+            updateOrientButton();
+        }
+        text("clock", data.clock || "--:--");
+        text("host", data.host || "--");
+        var hostEl = $("host");
+        if (hostEl && data.host) hostEl.title = data.host;
+        text("src", "LAN · " + (data.sys && data.sys.port ? data.sys.port : "1S"));
+
+        var cpu = data.cpu || {};
+        var gpu = data.gpu || {};
+        var ram = data.ram || {};
+        var fps = data.fps || {};
+
+        text("cpuName", cpu.name || "CPU");
+        var cpuFreq = isNum(cpu.freq) ? (cpu.freq >= 1000 ? (cpu.freq / 1000).toFixed(2) : Math.round(cpu.freq)) : null;
+        var cpuFreqUnit = isNum(cpu.freq) && cpu.freq >= 1000 ? "G" : "M";
+        setGauge("cpuLoadArc", "cpuLoad", cpu.load, 100,
+            isNum(cpu.load) ? Math.round(cpu.load) : null, "%");
+        setGauge("cpuTempArc", "cpuTemp", cpu.temp, 100,
+            isNum(cpu.temp) ? Math.round(cpu.temp) : null, "°");
+        setGauge("cpuPowerArc", "cpuPower", cpu.power, 150,
+            isNum(cpu.power) ? Math.round(cpu.power) : null, "W");
+        setGauge("cpuFreqArc", "cpuFreq", cpu.freq, cpu.freqMax || 5000, cpuFreq, cpuFreqUnit);
+        setGauge("cpuVoltArc", "cpuVolt", cpu.voltage, 1.5,
+            isNum(cpu.voltage) ? cpu.voltage.toFixed(2) : null, "V");
+
+        text("gpuName", gpu.name || "GPU");
+        var gpuFreq = isNum(gpu.freq) ? (gpu.freq / 1000).toFixed(2) : null;
+        setGauge("gpuLoadArc", "gpuLoad", gpu.load, 100,
+            isNum(gpu.load) ? Math.round(gpu.load) : null, "%");
+        setGauge("gpuTempArc", "gpuTemp", gpu.temp, 100,
+            isNum(gpu.temp) ? Math.round(gpu.temp) : null, "°");
+        setGauge("gpuPowerArc", "gpuPower", gpu.power, 250,
+            isNum(gpu.power) ? Math.round(gpu.power) : null, "W");
+        setGauge("gpuFreqArc", "gpuFreq", gpu.freq, 3500, gpuFreq, "G");
+        setGauge("gpuVramArc", "gpuVram", gpu.vramPercent, 100,
+            isNum(gpu.vramPercent) ? Math.round(gpu.vramPercent) : null, "%");
+        text("gpuVramLabel", "显存");
+        text("gpuVramSub", isNum(gpu.vramUsed) ? (gpu.vramUsed / 1024).toFixed(1) + "G" : "--");
+
+        var ramPct = isNum(ram.percent) ? clamp(ram.percent, 0, 100) : null;
+        text("ramPercent", isNum(ramPct) ? Math.round(ramPct) : "--");
+        text("ramDetail", ramDetail(ram.used, ram.total));
+        text("ramFreq", isNum(ram.freq) && ram.freq > 0 ? Math.round(ram.freq) + "MHz" : "");
+        var fill = $("ramFill");
+        var bar = $("ramBar");
+        var percentEl = $("ramPercent");
+        var color = "#63e6a8";
+        if (isNum(ramPct)) {
+            if (ramPct >= 85) color = "#ff6b6b";
+            else if (ramPct >= 70) color = "#ffb454";
+            if (fill) {
+                fill.style.height = ramPct + "%";
+                fill.style.background = color;
+            }
+            if (bar) {
+                bar.style.width = ramPct + "%";
+                bar.style.background = color;
+            }
+            if (percentEl) percentEl.style.color = color;
+        } else {
+            if (fill) fill.style.height = "0%";
+            if (bar) bar.style.width = "0%";
+            if (percentEl) percentEl.style.color = "#effff7";
+        }
+
+        if (fps.available && isNum(fps.value)) {
+            text("fpsVal", Math.round(fps.value));
+            text("fpsLow", isNum(fps.onePercentLow) ? Math.round(fps.onePercentLow) : "--");
+            text("fpsApp", fps.app || "游戏");
+            pushFps(fps.value);
+        } else {
+            text("fpsVal", "--");
+            text("fpsLow", "--");
+            text("fpsApp", fps.presentmon ? "等待游戏" : "未就绪");
+            pushFps(null);
+        }
+
+        if (data.volume && !state.dragging) {
+            state.volume = data.volume.available ? data.volume.value : null;
+            state.mute = !!data.volume.mute;
+            renderVolume();
+        }
+
+        if (data.sensorOk === false) {
+            text("status", "在线 · 传感器初始化");
+        }
+    }
+
+    var pollTimer = null;
+
+    function schedulePoll() {
+        if (pollTimer) clearTimeout(pollTimer);
+        pollTimer = setTimeout(poll, 1000);
+    }
+
+    function poll() {
+        var xhr = new XMLHttpRequest();
+        var finished = false;
+        var guard = setTimeout(function () {
+            if (finished) return;
+            finished = true;
+            try { xhr.abort(); } catch (e) { }
+            setOnline(false);
+            schedulePoll();
+        }, 5000);
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4 || finished) return;
+            finished = true;
+            clearTimeout(guard);
+            if (xhr.status === 200) {
+                try {
+                    renderStats(JSON.parse(xhr.responseText));
+                } catch (e) {
+                    setOnline(false);
+                }
+            } else {
+                setOnline(false);
+            }
+            schedulePoll();
+        };
+
+        try {
+            xhr.open("GET", "/api/stats?ts=" + (new Date()).getTime(), true);
+            xhr.send(null);
+        } catch (e) {
+            finished = true;
+            clearTimeout(guard);
+            setOnline(false);
+            schedulePoll();
+        }
+    }
+
+    // --- in-page orientation toggle -------------------------------------
+    // Cycles 横屏 / 竖屏 and posts the choice back to the exe so both sides
+    // stay in sync. Works independently of the exe button and of iOS 6's
+    // unreliable orientation detection.
+    function currentLanded() {
+        return (" " + (document.documentElement.className || "") + " ").indexOf(" land ") >= 0;
+    }
+
+    function updateOrientButton() {
+        var btn = $("orientBtn");
+        if (!btn) return;
+        // Single-glyph indicator of the CURRENT layout; tapping switches.
+        // ▲ = portrait (tall), ▶ = landscape (wide).
+        btn.textContent = currentLanded() ? "\u25B6" : "\u25B2";
+        btn.title = currentLanded() ? "横屏布局（点按切换竖屏）" : "竖屏布局（点按切换横屏）";
+    }
+
+    function setLayoutLocal(mode) {
+        window.__forceLayout = mode;
+        if (window.updateLandClass) window.updateLandClass();
+        updateOrientButton();
+        layoutGauges();
+    }
+
+    function postLayout(mode) {
+        var xhr = new XMLHttpRequest();
+        try {
+            xhr.open("POST", "/api/layout", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.send("mode=" + mode);
+        } catch (e) { }
+    }
+
+    function bindOrientButton() {
+        var btn = $("orientBtn");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+            var next = currentLanded() ? "portrait" : "landscape";
+            setLayoutLocal(next);
+            postLayout(next);
+            // One more pass after the browser settles the new box model.
+            setTimeout(function () { setLayoutLocal(next); }, 150);
+        }, false);
+        updateOrientButton();
+    }
+
+    function boot() {
+        if (window.updateLandClass) window.updateLandClass();
+        bindSlider();
+        bindOrientButton();
+        renderVolume();
+        layoutGauges();
+        drawFpsChart();
+        poll();
+        setTimeout(function () {
+            try { window.scrollTo(0, 0); } catch (e) { }
+        }, 80);
+    }
+
+    if (window.addEventListener) {
+        window.addEventListener("load", boot, false);
+        window.addEventListener("resize", layoutGauges, false);
+        window.addEventListener("orientationchange", function () {
+            if (window.updateLandClass) window.updateLandClass();
+            setTimeout(layoutGauges, 250);
+            setTimeout(function () {
+                if (window.updateLandClass) window.updateLandClass();
+                layoutGauges();
+            }, 400);
+        }, false);
+    } else {
+        window.onload = boot;
+    }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+LAN Perf Mon — Third-party notices
+==================================
+
+This application embeds or uses the following third-party components.
+The application itself is a personal utility and is provided as-is.
+
+1. LibreHardwareMonitorLib 0.9.6
+   Project: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
+   License: Mozilla Public License 2.0 (MPL-2.0)
+   License text: https://www.mozilla.org/en-US/MPL/2.0/
+   The library is embedded unmodified. Source code is available at the
+   project URL above. It is used to read CPU/GPU/memory sensors on Windows.
+
+2. PresentMon 2.6.0
+   Project: https://github.com/GameTechDev/PresentMon
+   License: MIT
+   Copyright (c) Intel Corporation
+   License text: https://github.com/GameTechDev/PresentMon/blob/main/LICENSE
+   The PresentMon command-line executable is embedded unmodified and is
+   extracted to %TEMP%\LanPerfMon at runtime. It is used to capture frame
+   presentation events (FPS) through ETW.
+
+3. HidSharp 2.6.4
+   Project: https://github.com/Constructor/HidSharp
+   License: MIT / Apache-2.0 (see project)
+   Used by LibreHardwareMonitorLib for HID device access.
+
+4. System.Memory, System.Buffers, System.Numerics.Vectors,
+   System.Runtime.CompilerServices.Unsafe, System.Threading.AccessControl
+   Project: https://github.com/dotnet/runtime
+   License: MIT
+   Used as runtime dependencies of LibreHardwareMonitorLib.
+
+5. RAMSPDToolkit-NDD 1.4.2, DiskInfoToolkit 1.1.2, BlackSharp.Core 1.0.7
+   NuGet packages:
+   https://www.nuget.org/packages/RAMSPDToolkit-NDD
+   https://www.nuget.org/packages/DiskInfoToolkit
+   https://www.nuget.org/packages/BlackSharp.Core
+   Used as dependencies of LibreHardwareMonitorLib. See each package page
+   for its license.
+
+6. PawnIO
+   Project: https://pawnio.eu/
+   PawnIO is NOT bundled with this application. If it is installed on the
+   machine, LibreHardwareMonitorLib uses it to read CPU MSRs for temperature,
+   power, voltage and clock sensors. It is a separate system driver with its
+   own license.
+
+7. Intel Graphics Control Library (IGCL / ControlLib.dll)
+   Part of the Intel graphics driver installation. It is NOT bundled with
+   this application. It is used through LibreHardwareMonitorLib to read
+   Intel Arc GPU sensors.
+
+Trademarks
+----------
+Intel, Intel Arc and Core are trademarks of Intel Corporation.
+Windows is a trademark of Microsoft Corporation.
+All other trademarks are the property of their respective owners.
+
+No warranty
+-----------
+The software is provided "as is", without warranty of any kind. Hardware
+sensor readings depend on drivers, firmware and motherboard support and may
+be inaccurate or unavailable on some systems.
