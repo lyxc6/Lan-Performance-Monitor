@@ -1,0 +1,10 @@
+# 源文件在工作区统一 LF：本仓库现有文件均已是 LF，
+# 若不显式声明，Windows 上 core.autocrlf=true 会在下次检出时把整文件改成 CRLF，
+# 制造与被忽略的换行差异。
+* text=auto eol=lf
+
+# 二进制：不做换行转换、不做文本 diff
+*.png binary
+*.ico binary
+*.exe binary
+*.dll binary
