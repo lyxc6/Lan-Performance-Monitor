@@ -10,6 +10,13 @@
 
 ![横屏预览](preview-landscape.png)
 
+## 目录
+
+- **只想用起来** → [快速使用](#2-快速使用)：先拿 exe，再双击，手机开浏览器访问
+- **想改代码** → [单文件与构建](#6-单文件与构建) 和 [CONTRIBUTING.md](CONTRIBUTING.md)
+- **遇到问题** → [常见问题](#7-常见问题)；托盘图标消失、布局乱掉各有专节
+- **想接自动化** → 见 [HTTP 接口](#9-http-接口)
+
 ---
 
 ## 1. 功能
@@ -47,15 +54,45 @@
 
 ## 2. 快速使用
 
+### 先拿到 LanPerfMon.exe
+
+本仓库**只放源码，不放编译好的 exe**（`dist/` 被 `.gitignore` 排除）。二选一：
+
+**方式 A：直接用 Releases 里的 exe（推荐给使用者）**
+
+到 **[Releases](https://github.com/lyxc6/Lan-Performance-Monitor/releases)** 页面下载最新一版的
+`LanPerfMon.exe`，放到任意目录即可运行，不需要装 .NET SDK 或 Visual Studio。
+
+> 如果没有可用的 Release，用下面的方式 B 自己构建。
+
+**方式 B：自己构建（需要开发环境）**
+
+```powershell
+git clone https://github.com/lyxc6/Lan-Performance-Monitor.git
+cd Lan-Performance-Monitor
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+产物在 `dist\LanPerfMon.exe`。构建只需要 Windows 自带的 .NET Framework 4.x，
+不需要额外安装任何 SDK；详见 [第 6 节](#6-单文件与构建)。
+
+### 运行
+
 1. 双击 `LanPerfMon.exe`。
-2. Windows 会弹出 UAC，请选择“是”。  
+2. Windows 会弹出 UAC，请选择"是"。  
    **必须允许管理员权限**，否则 CPU 温度、功耗、电压和 FPS 会显示 `--`。
 3. 主窗口会显示类似：
    `http://192.168.1.43:8686/`
-4. 让 iPhone 4S 连接**同一个 Wi-Fi**，在 Safari 地址栏输入上面的地址。
-5. 页面右侧的竖直滑条可以直接拖动调节电脑当前默认播放设备的音量；点“静音”切换静音。
+4. 让手机连接**同一个 Wi-Fi**，在浏览器地址栏输入上面的地址。
+5. 页面右侧的竖直滑条可以直接拖动调节电脑当前默认播放设备的音量；点"静音"切换静音。
 
-关闭主窗口不会退出程序，而是缩到右下角托盘。要完全退出：右键托盘图标 → “退出”。
+关闭主窗口不会退出程序，而是缩到右下角托盘。要完全退出：右键托盘图标 → "退出"。
+
+> 这个地址是**你本机**的局域网 IP，每台机器都不同，以主窗口显示为准。
+
+### 想快速确认它能用？
+
+浏览器打开 `http://<你的IP>:8686/api/health`，返回 `{"ok":true}` 即服务正常。
 
 ### 横屏 / 竖屏布局（真机识别失效时用）
 
@@ -82,6 +119,16 @@
 ```bat
 LanPerfMon.exe --port 9000
 ```
+
+完整命令行参数：
+
+| 参数 | 作用 |
+| --- | --- |
+| `--port 9000` / `--port=9000` | 指定监听端口（1–65535，越界会被忽略并回退到 ini 里的值） |
+| `--minimized` / `-min` | 启动后直接缩到托盘，不显示主窗口 |
+| `--local` | 只监听 `127.0.0.1`，不接受局域网访问（仅本机调试用） |
+| `--no-fps` | 不启动 PresentMon（不需要 FPS 时可减少开销与权限依赖） |
+| `--no-firewall` | 不尝试添加防火墙规则 |
 
 ### 开机自启
 
@@ -240,7 +287,7 @@ netsh advfirewall firewall add rule name="LanPerfMon TCP 8686" dir=in action=all
 dist\LanPerfMon.exe
 ```
 
-单文件约 4.1 MB，内含：
+单文件约 **4.18 MB**（4,182,016 字节），内含：
 
 - C# WinForms 托盘程序
 - 内嵌网页（HTML/CSS/ES5 JS）
@@ -260,10 +307,28 @@ app.manifest         requireAdministrator 清单
 build.ps1            csc 一键构建
 tools/lhm096/        LHM 依赖（构建时嵌入）
 tools/PresentMon.exe 构建时嵌入
+tools/acorn.js       ES5 校验器（随仓库提供，离线可用）
 tools/cdp_shot.py    按视口截图（Edge headless + CDP），用于渲染验证
-tools/es5_check.py   校验 web/index.html 内联脚本为 ES5 语法
+tools/es5_check.py   校验 web/index.html 内联脚本为严格 ES5
 dist/                输出目录（已在 .gitignore 中，不进版本库）
 ```
+
+源码按职责分层，主要文件：
+
+| 文件 | 职责 |
+| --- | --- |
+| `src/Program.cs` | 入口：单实例互斥、装配嵌入依赖解析器 |
+| `src/MainForm.cs` | 主窗口与托盘（含 `WM_TASKBARCREATED` 重注册） |
+| `src/AppHost.cs` | 装配各子系统、端口与防火墙、布局状态 |
+| `src/MonitorService.cs` | LHM 传感器采样（CPU/GPU/内存） |
+| `src/FpsMonitor.cs` | PresentMon 子进程管理、帧时间解析、1% low |
+| `src/VolumeController.cs` | Core Audio 音量读写与静音 |
+| `src/HttpServer.cs` | 手写 TCP HTTP 服务与各 `/api/*` 路由 |
+| `src/StatsJson.cs` | 传感器快照的 JSON 序列化 |
+| `src/ChildProcessJob.cs` | Job 对象，保证本进程被杀时 PresentMon 一并回收 |
+| `src/ResourceLoader.cs` | 从 exe 内嵌资源加载托管程序集/工具 |
+| `src/DebugAccess.cs` | `/api/debug` 的令牌校验与路径脱敏 |
+| `src/Native.cs` | Win32 P/Invoke（私网判定、编码页、托盘消息等） |
 
 版本库约定：
 
@@ -271,8 +336,10 @@ dist/                输出目录（已在 .gitignore 中，不进版本库）
   `*.log` 及 `es5_check.py` 的生成物均被忽略。
 - 工作区文件统一 LF 换行（`.gitattributes` 钉住 `eol=lf`），避免 Windows 上
   `core.autocrlf` 造成整文件伪差异。
-- `tools/es5_check.py` 需要 `node` 可执行文件与 `tools/esprima.js`；缺失时脚本会
-  明确报错退出，不会静默跳过。
+- `tools/es5_check.py` 需要 `node` 可执行文件与 `tools/acorn.js`（已随仓库提供，离线可用）；
+  缺失时脚本会明确报错退出，不会静默跳过。
+- 用 `acorn` 而非 `esprima` 校验 ES5：`esprima@4` 会忽略 `ecmaVersion: 5` 选项按 ES2017 解析，
+  箭头函数与 `const` 都能混过去（假阳性）。
 
 构建：
 
@@ -284,6 +351,63 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 - `dist\LanPerfMon.exe`：正式版，`requireAdministrator`
 - `dist\LanPerfMonTest.exe`：测试版，`asInvoker`（仅开发调试用，功能不完整）
+
+> 两个 exe 的 C# 源码完全相同，唯一区别是嵌入的清单（`app.manifest`）申请的执行级别。
+> 测试版不需要 UAC，适合验证 HTTP/页面；但因为没有提权，传感器会缺温度/功耗/电压，
+> PresentMon 也会以退出码 6 失败（FPS 显示"需要管理员权限才能采集 FPS"）。这是预期行为。
+
+### 开发与自测
+
+改完代码后，建议按下面三档验证，从便宜到贵：
+
+**1. 构建 + ES5 校验（每次改动都跑，秒级）**
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
+python tools\es5_check.py
+```
+
+`es5_check.py` 会把 `web/index.html` 里**两个**内联 `<script>` 全部按严格 ES5 解析。
+需要 `node` 与随仓库提供的 `tools/acorn.js`；两者缺失都会明确报错而不是静默跳过。
+
+> 页面目标设备是 iOS 6.1.3 Safari，**不能用 ES6 语法、CSS 变量、flexbox、grid、`matchMedia`**。
+> 这条约束靠上面这个脚本兜底，改前端务必跑。
+
+**2. 起一个隔离实例做接口冒烟**
+
+用测试版 + 独立端口，避免撞上你正在用的实例：
+
+```powershell
+.\dist\LanPerfMonTest.exe --port 18690 --local --minimized
+```
+
+然后逐项确认：
+
+```powershell
+curl.exe http://127.0.0.1:18690/api/health    # {"ok":true}
+curl.exe http://127.0.0.1:18690/api/stats     # 传感器 JSON
+curl.exe http://127.0.0.1:18690/api/config    # 端口与 IP 列表
+```
+
+`--local` 只监听回环地址，测完记得杀掉进程。若改了鉴权相关代码，注意
+`/api/debug` 不带令牌时应返回 `"locked": true` 且路径被裁剪（见上文"诊断令牌"）。
+
+**3. 页面渲染验证（改了 `web/index.html` 时必做）**
+
+`tools/cdp_shot.py` 用 Edge headless + CDP 按指定视口截图：
+
+```powershell
+python tools\cdp_shot.py http://127.0.0.1:18690/ shot-320.png 320 480
+python tools\cdp_shot.py http://127.0.0.1:18690/ shot-480.png 480 320
+```
+
+至少要覆盖 iPhone 4S 的 **320×480** 与 **480×320**；再各点一次主窗口的「布局」按钮
+（自动 / 横屏 / 竖屏）确认三种模式都不出现文字压边或元素溢出卡片。
+
+> 脚本会把临时的 Edge 配置写到 `tools/edge-shot-profile/`（约 39 MB，已加入 `.gitignore`），
+> 用完可以直接删掉，下次运行会重建。
+
+需要 `python`、Edge 与网络空闲端口；脚本自带 6 秒等待，用于让页面轮询填充真实数据。
 
 ---
 
@@ -299,7 +423,7 @@ A：手机页面还在轮询旧端口。用新地址重新打开；主窗口的�
 A：这是所有核心的实时平均频率；满载/单核睿频时会变化。频率圆环的进度按本次运行观察到的最高频率缩放，圆心数值始终显示当前频率。
 
 **Q：FPS 显示的是浏览器/桌面？**  
-A：已过滤浏览器、桌面、终端、Electron 等进程；只显示前台或接近全屏的 3D 程序。若仍有误判，可把进程名反馈给我。
+A：已过滤浏览器、桌面、终端、Electron 等进程；只显示前台或接近全屏的 3D 程序。若仍有误判，欢迎在 [Issues](https://github.com/lyxc6/Lan-Performance-Monitor/issues) 里附上进程名。
 
 **Q：Windows 提示“未知发布者”/SmartScreen？**  
 A：exe 没有购买代码签名证书。可以点“更多信息 → 仍要运行”。硬件传感器驱动也可能触发杀毒误报，需加入信任。
@@ -317,5 +441,44 @@ A：`%TEMP%\LanPerfMon\LanPerfMon.log`，包含启动、端口、PresentMon 状�
 - PresentMon 2.6.0 — MIT
 - PawnIO — 系统驱动，未随 exe 分发
 - HidSharp、System.Memory 等 — 各自开源许可证
+
+## 9. HTTP 接口
+
+网页本身就是调用这些接口工作的，所以你也可以拿来接自己的脚本、状态栏或键盘小屏。
+默认端口 `8686`，地址用主窗口显示的那个局域网 IP。
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/health` | 存活检查，返回 `{"ok":true}` |
+| `GET` | `/api/stats` | 传感器快照（CPU/GPU/内存/FPS/音量/系统信息），网页每秒轮询的就是它 |
+| `GET` | `/api/volume` | 当前音量与静音状态 |
+| `POST` | `/api/volume` | 设置音量：`v=0..100`；切换静音：`mute=toggle` |
+| `GET` | `/api/layout` | 当前布局模式 |
+| `POST` | `/api/layout` | 设置布局：`mode=auto` / `landscape` / `portrait`（其它值返回 400） |
+| `GET` | `/api/config` | 端口、版本、本机 IPv4 列表 |
+| `GET` | `/api/debug` | 诊断信息，**需要令牌**（见上文"诊断令牌"） |
+
+几点说明：
+
+- 所有响应都是 `application/json`，`Cache-Control: no-store`（静态页面/图标除外）。
+- 服务**只接受私有地址/回环地址**的客户端（10/8、172.16/12、192.168/16、127/8、169.254/16），
+  公网来源直接断开连接。
+- 这是**无登录**的局域网工具：同网段内知道地址的人都能读数据、调音量、切布局。
+  **不要做端口映射到公网。**
+- 示例：
+
+```powershell
+curl.exe http://192.168.1.43:8686/api/stats
+curl.exe -X POST -d "v=30" http://192.168.1.43:8686/api/volume
+```
+
+---
+
+## 许可
+
+本仓库**目前尚未声明开源许可证**（默认保留所有权利）。这意味着你可以查看、
+克隆、构建并自用，但不代表可以再分发或商用；如需要更明确的授权，请联系仓库所有者。
+
+随仓库分发的第三方组件遵循各自的许可证，详见 [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)。
 
 本项目仅用于个人/家庭局域网监控，不提供任何硬件损坏或数据准确性担保。
