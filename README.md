@@ -17,6 +17,7 @@
 - **遇到问题** → [常见问题](#7-常见问题)；托盘图标消失、布局乱掉各有专节
 - **想接自动化** → 见 [HTTP 接口](#9-http-接口)
 - **想知道能不能用** → 见 [许可](#许可)：**专有许可，可自用、不可再分发或商用**
+- **想升级版本** → 见 [版本与更新](#10-版本与更新)
 
 ---
 
@@ -59,12 +60,22 @@
 
 本仓库**只放源码，不放编译好的 exe**（`dist/` 被 `.gitignore` 排除）。二选一：
 
-**方式 A：直接用 Releases 里的 exe（推荐给使用者）**
+**方式 A：直接下载现成的 exe（推荐给使用者）**
 
-到 **[Releases](https://github.com/lyxc6/Lan-Performance-Monitor/releases)** 页面下载最新一版的
-`LanPerfMon.exe`，放到任意目录即可运行，不需要装 .NET SDK 或 Visual Studio。
+👉 **[下载 v1.0.0 · LanPerfMon.exe](https://github.com/lyxc6/Lan-Performance-Monitor/releases/download/v1.0.0/LanPerfMon.exe)**
 
-> 如果没有可用的 Release，用下面的方式 B 自己构建。
+下载后放到任意目录即可双击运行，不需要装 .NET SDK 或 Visual Studio。
+
+- 文件大小：4,182,016 字节
+- SHA-256：`05FF10048DD2C7EE309CE007F4D0CD4EE508ACB274311C9D5B7E81BB519F177E`
+
+校验下载是否完整：
+
+```powershell
+Get-FileHash .\LanPerfMon.exe -Algorithm SHA256
+```
+
+全部版本见 [Releases](https://github.com/lyxc6/Lan-Performance-Monitor/releases)。
 
 **方式 B：自己构建（需要开发环境）**
 
@@ -76,6 +87,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 产物在 `dist\LanPerfMon.exe`。构建只需要 Windows 自带的 .NET Framework 4.x，
 不需要额外安装任何 SDK；详见 [第 6 节](#6-单文件与构建)。
+
+> 两种方式得到的是同一个程序。Release 里的 exe 就是由对应 tag 的源码构建并实测过的。
 
 ### 运行
 
@@ -472,6 +485,29 @@ A：`%TEMP%\LanPerfMon\LanPerfMon.log`，包含启动、端口、PresentMon 状�
 curl.exe http://192.168.1.43:8686/api/stats
 curl.exe -X POST -d "v=30" http://192.168.1.43:8686/api/volume
 ```
+
+---
+
+## 10. 版本与更新
+
+当前版本：**v1.0.0**（源码 `AppHost.Version = "1.0.0"`，程序集 `1.0.0.0`）
+
+| 版本 | 要点 |
+| --- | --- |
+| v1.0.0 | 首个对外发布版本：CPU/GPU/内存/FPS/音量监控、三种布局模式、托盘与开机自启、PresentMon 帧率与 1% low、`/api/debug` 令牌保护 |
+
+### 怎么升级
+
+1. 到 [Releases](https://github.com/lyxc6/Lan-Performance-Monitor/releases) 下载新版 `LanPerfMon.exe`
+2. 右键托盘图标 → **退出**（不要只关窗口，关窗口只是缩到托盘）
+3. 用新 exe 覆盖旧文件
+4. 重新启动
+
+配置保存在 exe 同目录的 `LanPerfMon.ini`（端口、布局、自启），**覆盖 exe 不会丢**。
+如果换到新目录，把该 ini 一起拷过去即可保留设置。
+
+> 升级后若托盘图标没出现，属正常现象——程序会在启动后 3/10/30/60 秒各重注册一次，
+> 或等 Explorer 广播 `WM_TASKBARCREATED` 时自动恢复（详见第 2 节）。
 
 ---
 
