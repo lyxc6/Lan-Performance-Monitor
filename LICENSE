@@ -1,0 +1,162 @@
+LAN Perf Mon — 专有软件许可协议
+Copyright (c) 2026 lyxc6. All rights reserved.
+
+==========================================================
+
+中文说明（以本文件为准，下方英文仅为参考译本）
+
+本软件及其源代码（以下称"本软件"）不采用任何开源许可证。
+**版权所有，保留一切权利。** 未经著作权人书面许可，本文件未明确授予的权利
+均不授予，包括但不限于复制、修改、再分发与商业使用。
+
+----------------------------------------------------------
+一、明确允许（无需另行申请）
+
+在遵守本协议全部条款的前提下，你被允许：
+
+1. **查看**本软件源代码（本仓库以公开形式提供）。
+2. **克隆 / 下载**本仓库到本地。
+3. **为自用目的构建**本软件，例如在你自己或你家庭拥有的设备上运行
+   `build.ps1` 生成 exe。
+4. **在个人或家庭环境中使用**本软件，包括其局域网监控功能。
+   非营利组织、教育机构的**内部非商业**教学或研究用途同样允许。
+   （公司/企业内部的任何使用请先取得书面许可，见第二节第 3 条。）
+5. **修改**源代码，但仅限于你自己使用（无论是否对外使用均可），
+   **前提是修改后的版本不对外分发**。
+6. **引用 / 评价**本软件，如文章、评测、教学材料中附带截图与仓库链接，
+   并注明出处。
+
+----------------------------------------------------------
+二、明确禁止（需事先取得书面许可）
+
+未经著作权人书面许可，你**不得**：
+
+1. **再分发**本软件或其二进制形式（包括免费分发、网盘转载、
+   应用商店上架、随硬件产品捆绑、放进软件包或系统镜像等）。
+   允许每个人自行从本仓库获取，但不允许你把副本再散播出去。
+2. **分发修改后的版本**（见第一节第 5 条的例外：仅供本人使用）。
+3. **任何商业或企业用途**，包括但不限于：在公司或营利组织内部部署使用、
+   面向客户提供服务、集成进商业产品、作为收费服务的一部分、
+   用于经营场所的对外演示。取得书面许可后方可使用。
+4. **销售、出租、出借**本软件，或以本软件为基础提供收费服务。
+5. **移除或隐藏**本软件中的版权声明、许可声明及第三方许可文件。
+6. **使用本项目的名称、标识**暗示获得官方授权、背书或 affiliation。
+7. **就本软件申请专利**，或将其用于专利诉讼目的。
+
+----------------------------------------------------------
+三、第三方组件（不受本协议约束）
+
+本软件内嵌或以其他方式使用的第三方组件，其权利与许可**独立于本协议**，
+见 THIRD-PARTY-NOTICES.txt。特别是：
+
+- **LibreHardwareMonitorLib 0.9.6** — Mozilla Public License 2.0 (MPL-2.0)。
+  本仓库以**未经修改**的原始程序集形式嵌入，因此遵循 MPL-2.0 对二进制分发的
+  要求；MPL 在文件级别生效，**不会波及**本项目自身代码的许可。
+- **PresentMon 2.6.0** — MIT License，版权归属 Intel Corporation。
+- **HidSharp** — MIT / Apache-2.0。
+- **System.Memory / System.Buffers / System.Numerics.Vectors /
+  System.Runtime.CompilerServices.Unsafe / System.Threading.AccessControl**
+  — MIT License，版权归属 .NET Foundation。
+- **PawnIO** — 独立系统驱动，**未随本软件分发**。
+
+上述组件各自的许可证优先约束它们本身。若本协议与其中任何许可证冲突，
+就该组件而言以后者为准，但这不改变本协议对**本项目自身代码**的约束。
+
+----------------------------------------------------------
+四、贡献
+
+若你向本项目提交代码、文档或其他内容（通过 Issue、Pull Request 等途径），
+你声明：
+
+1. 你有权提交该内容，且交付内容不侵犯第三方权利；
+2. 你同意该内容以**本项目当前许可**（专有、保留所有权利）授权给著作权人，
+   著作权人可自行决定是否、如何采纳与使用，包括在本软件的其他版本中使用；
+3. 撤回贡献并不免除著作权人对已有版本中内容的继续使用权。
+
+如你不接受上述条款，请不要提交贡献。
+
+----------------------------------------------------------
+五、无担保
+
+本软件按"现状"提供，不附带任何明示或暗示的担保，包括但不限于适销性、
+特定用途适用性与不侵权担保。硬件传感器读数依赖驱动、固件与主板支持，
+在部分系统上可能不准确或不可用。
+
+在适用法律允许的最大范围内，作者与著作权人不对任何直接、间接、偶然、
+特殊、惩罚性或后果性损害承担责任，包括但不限于数据丢失、设备损坏、
+业务中断或利润损失，无论其如何产生。使用本软件即表示你自行承担全部风险。
+
+本软件会读取硬件传感器、申请管理员权限、并创建 Windows 计划任务与
+防火墙规则——请在理解这些行为的前提下使用。
+
+----------------------------------------------------------
+六、终止
+
+你违反本协议任一条款时，本协议授予你的全部权利**立即自动终止**，
+你必须停止使用并销毁所有副本（保留本仓库的公开形式不受此限）。
+著作权人可随时变更本协议，变更后对相应版本生效。
+
+----------------------------------------------------------
+七、适用法律与联系方式
+
+本协议适用于中华人民共和国法律。如需取得本文件未授予的授权
+（再分发、商业使用等），请通过仓库 Issue 或以下方式联系著作权人：
+
+  https://github.com/lyxc6/Lan-Performance-Monitor/issues
+
+==========================================================
+
+English translation (for reference only; the Chinese text above governs)
+
+This software and its source code (the "Software") is NOT open source.
+Copyright (c) 2026 lyxc6. All rights reserved. No rights are granted other
+than those expressly stated below, including copying, modification,
+redistribution and commercial use.
+
+PERMITTED (without further permission):
+1. View the source code provided publicly in this repository.
+2. Clone / download this repository locally.
+3. Build the Software for your own use (e.g. running build.ps1 for devices
+   owned by you or your household).
+4. Use the Software in personal or household environments, including its LAN
+   monitoring features. Internal, non-commercial teaching or research use by
+   non-profit organizations and educational institutions is also permitted.
+   (Any use inside a company or for-profit entity requires prior written
+   permission — see PROHIBITED item 3.)
+5. Modify the source for your own use, provided the modified version is not
+   distributed.
+6. Quote / review the Software in articles or teaching material with
+   attribution.
+
+PROHIBITED (prior written permission required):
+1. Redistributing the Software or its binaries, including free redistribution,
+   mirroring, app-store publication, bundling with hardware or software
+   packages, or inclusion in system images.
+2. Distributing modified versions.
+3. Any commercial or enterprise use, including deployment inside a company or
+   for-profit organization, providing services to customers, embedding in
+   commercial products, or paid service offerings. Written permission is
+   required first.
+4. Selling, renting or lending the Software.
+5. Removing or obscuring copyright, license or third-party notices.
+6. Using the project's name or marks to imply endorsement or affiliation.
+7. Patenting the Software or using it for patent litigation.
+
+THIRD-PARTY COMPONENTS are governed by their own licenses (see
+THIRD-PARTY-NOTICES.txt), notably LibreHardwareMonitorLib under MPL-2.0
+(embedded unmodified, file-level copyleft, no effect on this project's own
+code), PresentMon under MIT, HidSharp under MIT/Apache-2.0, and the .NET
+runtime libraries under MIT.
+
+CONTRIBUTIONS: by submitting code or content you affirm you have the right to
+do so and you license it to the copyright holder under the terms of this
+license.
+
+NO WARRANTY: provided "as is", without warranty of any kind. Hardware sensor
+readings depend on drivers, firmware and motherboard support and may be
+inaccurate or unavailable on some systems. To the maximum extent permitted by
+law, the author is not liable for any damages arising from use of the Software.
+
+TERMINATION: any violation terminates all rights granted to you immediately.
+
+GOVERNING LAW: laws of the People's Republic of China.
